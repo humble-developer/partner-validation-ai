@@ -63,9 +63,46 @@ cd partner-validation-ai
 # Install dependencies
 npm install
 
+# Set up environment variables (see Google OAuth Setup below)
+cp .env.example .env
+# Edit .env and add your Google Client ID
+
 # Start development server
 npm run dev
 ```
+
+### Google OAuth Setup
+To enable Google Sign-In functionality:
+
+1. **Create a Google Cloud Project**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+
+2. **Enable Google+ API**
+   - Navigate to "APIs & Services" > "Library"
+   - Search for "Google+ API" and enable it
+
+3. **Create OAuth 2.0 Credentials**
+   - Go to "APIs & Services" > "Credentials"
+   - Click "Create Credentials" > "OAuth client ID"
+   - Choose "Web application"
+   - Add your domain to "Authorized JavaScript origins":
+     - For development: `http://localhost:8080`
+     - For production: `https://your-domain.com`
+
+4. **Configure Environment Variables**
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+
+   # Edit .env and replace with your actual Google Client ID
+   VITE_GOOGLE_CLIENT_ID=your-actual-client-id.apps.googleusercontent.com
+   ```
+
+5. **Test the Integration**
+   - Start the development server: `npm run dev`
+   - Navigate to the login page
+   - Click "Sign in with Google" to test the integration
 
 ### Available Scripts
 ```bash
@@ -161,9 +198,10 @@ The application is configured for both development and production environments:
 ## 📱 Features Overview
 
 ### Authentication System
-- **Secure Login** - Email/password authentication
-- **Session Management** - Persistent login state
-- **User Experience** - Smooth login flow with validation
+- **Multiple Login Options** - Email/password and Google Sign-In authentication
+- **Google OAuth Integration** - Secure Google Sign-In with JWT token handling
+- **Session Management** - Persistent login state across browser sessions
+- **User Experience** - Smooth login flow with validation and error handling
 
 ### Dashboard Interface
 - **Overview Cards** - Key metrics and statistics

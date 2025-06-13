@@ -138,6 +138,28 @@
             <Users class="w-3.5 h-3.5 mr-2" />
             Partner Directory
           </Button>
+
+          <Button
+            @click="activeView = 'bulk'"
+            :class="activeView === 'bulk'
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
+              : 'bg-white/80 backdrop-blur-sm text-gray-700 border border-slate-200 hover:bg-white hover:border-slate-300'"
+            class="font-semibold transition-all duration-200 rounded-xl"
+          >
+            <Brain class="w-3.5 h-3.5 mr-2" />
+            Bulk Operations
+          </Button>
+
+          <Button
+            @click="activeView = 'analytics'"
+            :class="activeView === 'analytics'
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg'
+              : 'bg-white/80 backdrop-blur-sm text-gray-700 border border-slate-200 hover:bg-white hover:border-slate-300'"
+            class="font-semibold transition-all duration-200 rounded-xl"
+          >
+            <Clock class="w-3.5 h-3.5 mr-2" />
+            Analytics
+          </Button>
         </div>
 
         <Button
@@ -218,6 +240,10 @@
           @submit="handlePartnerSubmit"
         />
 
+        <BulkOperations v-if="activeView === 'bulk'" />
+
+        <AnalyticsDashboard v-if="activeView === 'analytics'" />
+
         <HITLInterface v-if="activeView === 'review'" />
 
         <PartnerDirectory v-if="activeView === 'partners'" />
@@ -236,6 +262,8 @@ import PartnerRegistration from './PartnerRegistration.vue'
 import AIValidationWorkflow from './AIValidationWorkflow.vue'
 import HITLInterface from './HITLInterface.vue'
 import PartnerDirectory from './PartnerDirectory.vue'
+import BulkOperations from './BulkOperations.vue'
+import AnalyticsDashboard from './AnalyticsDashboard.vue'
 import { useToast } from '@/composables/use-toast'
 import { useValidationStore } from '@/stores/validation'
 
@@ -254,7 +282,9 @@ export default {
     PartnerRegistration,
     AIValidationWorkflow,
     HITLInterface,
-    PartnerDirectory
+    PartnerDirectory,
+    BulkOperations,
+    AnalyticsDashboard
   },
   setup() {
     const router = useRouter()
@@ -498,9 +528,12 @@ export default {
     }
 
     const handleLogout = () => {
-      // Clear authentication state
+      // Clear authentication state for both email and Google users
       localStorage.removeItem('isAuthenticated')
       localStorage.removeItem('userEmail')
+      localStorage.removeItem('userName')
+      localStorage.removeItem('userPicture')
+      localStorage.removeItem('authProvider')
 
       toast({
         title: "Logged Out",
