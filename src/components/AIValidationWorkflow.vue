@@ -72,7 +72,7 @@
             <div class="text-right">
               <Badge
                 v-if="agent.status === 'completed'"
-                class="bg-green-100 text-green-700 border border-green-200"
+                :class="getConfidenceBadgeClass(agent.name, agent.confidence)"
               >
                 {{ agent.confidence }}%
               </Badge>
@@ -356,6 +356,27 @@ export default {
       return true
     })
 
+    // Helper function to get confidence badge class based on agent type and score
+    const getConfidenceBadgeClass = (agentName, confidence) => {
+      let threshold = 70 // Default threshold
+
+      // Set specific thresholds based on agent type
+      if (agentName.toLowerCase().includes('name') || agentName.toLowerCase().includes('partner name')) {
+        threshold = 70 // Partner name threshold
+      } else if (agentName.toLowerCase().includes('address')) {
+        threshold = 60 // Address threshold
+      } else if (agentName.toLowerCase().includes('subsidiary') || agentName.toLowerCase().includes('subsidiaries')) {
+        threshold = 60 // Subsidiary threshold
+      }
+
+      // Return appropriate classes with proper hover states
+      if (confidence >= threshold) {
+        return 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200 hover:text-green-800 transition-colors duration-200'
+      } else {
+        return 'bg-yellow-100 text-yellow-700 border border-yellow-200 hover:bg-yellow-200 hover:text-yellow-800 transition-colors duration-200'
+      }
+    }
+
     // Helper function to format area names for user display
     const formatAreaName = (apiFieldName) => {
       const areaMap = {
@@ -634,7 +655,8 @@ export default {
       shouldShowReviewRequired,
       reviewRequiredMessage,
       navigateToReview,
-      isInitialMount
+      isInitialMount,
+      getConfidenceBadgeClass
     }
   }
 }
