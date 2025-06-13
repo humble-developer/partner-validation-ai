@@ -253,7 +253,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from '@/components/ui/button.vue'
 import Card from '@/components/ui/card.vue'
@@ -300,15 +300,25 @@ export default {
       userEmail.value = localStorage.getItem('userEmail') || ''
     })
 
+    onUnmounted(() => {
+      console.log('Dashboard component unmounting - cleaning up validation state')
+      // Clear all workflow states and active validation when dashboard unmounts
+      clearWorkflowStates()
+      validationStore.clearActiveValidation()
+      activePartnerRequest.value = null
+      animationCompleted.value = false
+    })
+
     // Watch for changes in the validation store to keep activePartnerRequest in sync
-    watch(() => validationStore.activeValidation, (newActiveValidation, oldActiveValidation) => {
-      if (newActiveValidation) {
+    watch(() => validationStore.activeValidation, (newActiveValidation) => {
+      // Only update if we're on the overview screen and there's a new validation
+      if (newActiveValidation && activeView.value === 'overview') {
         // Always update for new validations or status changes
         if (!activePartnerRequest.value ||
             activePartnerRequest.value.id !== newActiveValidation.id ||
             activePartnerRequest.value.status !== newActiveValidation.status) {
 
-          console.log('Updating activePartnerRequest with validation data')
+          console.log('Updating activePartnerRequest with validation data (overview screen)')
           console.log('Old partner ID:', activePartnerRequest.value?.id)
           console.log('New partner ID:', newActiveValidation.id)
           console.log('Old status:', activePartnerRequest.value?.status)
@@ -316,19 +326,64 @@ export default {
 
           activePartnerRequest.value = { ...newActiveValidation }
         }
+      } else if (!newActiveValidation) {
+        // Clear local state when store clears active validation
+        console.log('Store cleared active validation - clearing local state')
+        activePartnerRequest.value = null
+        animationCompleted.value = false
       }
     }, { deep: true })
+
+    // Helper function to clear workflow states
+    const clearWorkflowStates = () => {
+      try {
+        const keys = Object.keys(localStorage)
+        keys.forEach(key => {
+          if (key.startsWith('workflow_state_')) {
+            localStorage.removeItem(key)
+          }
+        })
+        console.log('Cleared all workflow states from localStorage')
+      } catch (error) {
+        console.warn('Failed to clear workflow states:', error)
+      }
+    }
 
     // Watch for view changes to handle state properly
     watch(() => activeView.value, (newView, oldView) => {
       console.log('View changed from', oldView, 'to', newView)
 
-      // When returning to overview, ensure we have the latest data
-      if (newView === 'overview' && activePartnerRequest.value) {
-        const latestValidation = validationStore.getValidationById(activePartnerRequest.value.id)
-        if (latestValidation) {
-          console.log('Refreshing active partner request with latest data')
-          activePartnerRequest.value = { ...latestValidation }
+      // Clear workflow states when navigating away from overview
+      if (oldView === 'overview' && newView !== 'overview') {
+        console.log('Navigating away from overview - clearing workflow states and active partner')
+        clearWorkflowStates()
+
+        // Clear the active partner request to prevent persistence
+        if (activePartnerRequest.value) {
+          console.log('Clearing active partner request:', activePartnerRequest.value.companyName)
+
+          // Clear workflow completion flags for all partners to ensure fresh start
+          validationStore.clearWorkflowCompletion(activePartnerRequest.value.id)
+
+          // Clear the active validation from the store
+          validationStore.clearActiveValidation()
+
+          // Clear the local active partner request
+          activePartnerRequest.value = null
+          animationCompleted.value = false
+        }
+      }
+
+      // When returning to overview, only restore if there's an active validation in the store
+      if (newView === 'overview') {
+        const storeActiveValidation = validationStore.activeValidation
+        if (storeActiveValidation && !activePartnerRequest.value) {
+          console.log('Restoring active validation from store:', storeActiveValidation.companyName)
+          activePartnerRequest.value = { ...storeActiveValidation }
+        } else if (!storeActiveValidation) {
+          console.log('No active validation in store - keeping overview clean')
+          activePartnerRequest.value = null
+          animationCompleted.value = false
         }
       }
     })
@@ -389,22 +444,29 @@ export default {
         // Reset animation state and start timer
         animationCompleted.value = false
 
+        // Show immediate processing started message
+        toast({
+          title: "AI Validation Started",
+          description: `Processing ${partnerData.companyName} through AI validation workflow...`,
+          variant: "default"
+        })
+
         // Set animation completion after 10 seconds (5 agents × 2 seconds each)
         setTimeout(() => {
           animationCompleted.value = true
           console.log('Animation completed, updating dashboard card status')
+
+          // Show validation complete message AFTER animation ends
+          const needsReview = validationStore.determineIfHumanReviewNeeded(partnerData, aiResults)
+
+          toast({
+            title: needsReview ? "Validation Complete - Review Required" : "Validation Complete - Auto-Approved",
+            description: needsReview
+              ? `${partnerData.companyName} requires human review (${aiResults.overallConfidence}% confidence)`
+              : `${partnerData.companyName} has been automatically approved (${aiResults.overallConfidence}% confidence)`,
+            variant: needsReview ? "default" : "default"
+          })
         }, 10000)
-
-        // Show success message based on validation status
-        const needsReview = validationStore.determineIfHumanReviewNeeded(partnerData, aiResults)
-
-        toast({
-          title: needsReview ? "Validation Complete - Review Required" : "Validation Complete - Auto-Approved",
-          description: needsReview
-            ? `${partnerData.companyName} requires human review (${aiResults.overallConfidence}% confidence)`
-            : `${partnerData.companyName} has been automatically approved (${aiResults.overallConfidence}% confidence)`,
-          variant: needsReview ? "default" : "default"
-        })
 
         // Log the raw API response for debugging
         console.log('Raw API Response:', partnerData.rawApiResponse)
@@ -426,8 +488,20 @@ export default {
         setTimeout(() => {
           animationCompleted.value = true
           console.log('Mock animation completed, updating dashboard card status')
+
+          // Show validation complete message AFTER animation ends (for mock data)
+          const needsReview = validationStore.determineIfHumanReviewNeeded(partnerData, aiResults)
+
+          toast({
+            title: needsReview ? "Validation Complete - Review Required (Mock)" : "Validation Complete - Auto-Approved (Mock)",
+            description: needsReview
+              ? `${partnerData.companyName} requires human review (${aiResults.overallConfidence}% confidence) - Mock Data`
+              : `${partnerData.companyName} has been automatically approved (${aiResults.overallConfidence}% confidence) - Mock Data`,
+            variant: "default"
+          })
         }, 10000)
 
+        // Show immediate processing started message for mock data
         toast({
           title: "Validation Started",
           description: `AI validation initiated for ${partnerData.companyName} (using mock data)`,
@@ -520,12 +594,7 @@ export default {
       activeView.value = 'review'
     }
 
-    const clearActivePartnerRequest = () => {
-      console.log('Clearing active partner request')
-      activePartnerRequest.value = null
-      animationCompleted.value = false
-      validationStore.clearActiveValidation()
-    }
+
 
     const handleLogout = () => {
       // Clear authentication state for both email and Google users

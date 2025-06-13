@@ -182,6 +182,31 @@ export default {
       }
     }
 
+    // Helper function to clear workflow state
+    const clearWorkflowState = (partnerId) => {
+      try {
+        localStorage.removeItem(getWorkflowStateKey(partnerId))
+        console.log('Cleared workflow state for partner:', partnerId)
+      } catch (error) {
+        console.warn('Failed to clear workflow state:', error)
+      }
+    }
+
+    // Helper function to clear all workflow states (for cleanup)
+    const clearAllWorkflowStates = () => {
+      try {
+        const keys = Object.keys(localStorage)
+        keys.forEach(key => {
+          if (key.startsWith('workflow_state_')) {
+            localStorage.removeItem(key)
+          }
+        })
+        console.log('Cleared all workflow states')
+      } catch (error) {
+        console.warn('Failed to clear all workflow states:', error)
+      }
+    }
+
     // Navigation function
     const navigateToReview = () => {
       console.log('Navigating to review screen')
@@ -530,14 +555,17 @@ export default {
         isInitialMount.value = false
         console.log('=== INITIAL MOUNT ===')
 
-        // Try to load saved workflow state first
-        const savedState = loadWorkflowState(newData.id)
-        if (savedState) {
-          console.log('Restoring saved workflow state:', savedState)
-          currentStep.value = savedState.currentStep
-          progress.value = savedState.progress
-          workflowStarted.value = savedState.workflowStarted
-          return
+        // Only restore state for completed partners, not pending ones
+        // This ensures fresh workflow animations for new submissions
+        if (newData.status === 'approved' || newData.status === 'rejected') {
+          const savedState = loadWorkflowState(newData.id)
+          if (savedState && savedState.workflowStarted) {
+            console.log('Restoring saved workflow state for completed partner:', savedState)
+            currentStep.value = savedState.currentStep
+            progress.value = savedState.progress
+            workflowStarted.value = savedState.workflowStarted
+            return
+          }
         }
 
         // Check if partner is already processed
@@ -560,24 +588,25 @@ export default {
 
         console.log('Partner status is:', newData.status, '- proceeding with animation')
 
-        // Check if workflow was already completed for this partner
-        // But only if this is truly a returning navigation, not a new submission
+        // For pending partners, always start fresh workflow
+        // Only preserve completed state for approved/rejected partners
+        if (newData.status === 'pending_review') {
+          console.log('Pending partner detected - starting fresh workflow')
+          console.log('Clearing any existing workflow state for fresh start')
+          clearWorkflowState(newData.id)
+          validationStore.clearWorkflowCompletion(newData.id)
+
+          currentStep.value = 0
+          progress.value = 0
+          workflowStarted.value = false
+          startWorkflow()
+          return
+        }
+
+        // Check if workflow was already completed for approved/rejected partners
         if (validationStore.isWorkflowCompleted(newData.id)) {
           console.log('Workflow already completed for this partner')
-
-          // Double-check: if partner was just submitted (very recent), start fresh workflow
-          const submissionTime = new Date(newData.submittedAt).getTime()
-          const now = new Date().getTime()
-          const timeDiff = now - submissionTime
-
-          if (timeDiff < 30000) { // Less than 30 seconds ago = fresh submission
-            console.log('Recent submission detected, starting fresh workflow despite completion flag')
-            validationStore.clearWorkflowCompletion(newData.id)
-            startWorkflow()
-            return
-          }
-
-          console.log('Showing completed state for older partner')
+          console.log('Showing completed state')
           currentStep.value = agents.value.length
           progress.value = 100
           workflowStarted.value = true
@@ -641,9 +670,23 @@ export default {
     })
 
     onUnmounted(() => {
+      console.log('AIValidationWorkflow component unmounting - cleaning up')
       if (timer) {
         clearInterval(timer)
+        timer = null
       }
+
+      // Clear workflow state when navigating away
+      if (props.partnerData?.id) {
+        console.log('Clearing workflow state for partner:', props.partnerData.id)
+        clearWorkflowState(props.partnerData.id)
+        validationStore.clearWorkflowCompletion(props.partnerData.id)
+      }
+
+      // Reset component state
+      currentStep.value = 0
+      progress.value = 0
+      workflowStarted.value = false
     })
 
     return {
