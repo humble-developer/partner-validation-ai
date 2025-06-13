@@ -362,9 +362,9 @@ export default {
 
       // Set specific thresholds based on agent type
       if (agentName.toLowerCase().includes('name') || agentName.toLowerCase().includes('partner name')) {
-        threshold = 70 // Partner name threshold
+        threshold = 80 // Partner name threshold
       } else if (agentName.toLowerCase().includes('address')) {
-        threshold = 60 // Address threshold
+        threshold = 70 // Address threshold
       } else if (agentName.toLowerCase().includes('subsidiary') || agentName.toLowerCase().includes('subsidiaries')) {
         threshold = 60 // Subsidiary threshold
       }
