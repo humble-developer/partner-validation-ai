@@ -79,9 +79,15 @@
             </div>
 
             <!-- CTA -->
-            <div class="flex items-center space-x-2 text-blue-600 group cursor-pointer">
-              <span class="font-medium">Learn more about our platform</span>
-              <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+            <div class="space-y-4">
+              <div class="flex items-center space-x-2 text-blue-600 group cursor-pointer" @click="openPresentation">
+                <span class="font-medium">View our hackathon presentation</span>
+                <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+              </div>
+              <div class="flex items-center space-x-2 text-purple-600 group cursor-pointer">
+                <span class="font-medium">Learn more about our platform</span>
+                <ArrowRight class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+              </div>
             </div>
           </div>
 
@@ -306,6 +312,11 @@ export default {
       }
     }
 
+    const openPresentation = () => {
+      // Open presentation in a new window
+      window.open('/presentation.html', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes')
+    }
+
     const features = [
       {
         icon: Brain,
@@ -339,6 +350,7 @@ export default {
       handleSubmit,
       handleGoogleSignIn,
       isGoogleLoading,
+      openPresentation,
       features
     }
   }
