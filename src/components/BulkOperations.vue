@@ -1,11 +1,11 @@
 <template>
   <div class="space-y-6">
     <!-- Bulk Operations Header -->
-    <Card class="p-6">
+    <Card class="p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-xl font-bold text-gray-900">Bulk Operations</h2>
-          <p class="text-gray-600">Process multiple partners efficiently</p>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">Bulk Operations</h2>
+          <p class="text-gray-600 dark:text-gray-400">Process multiple partners efficiently</p>
         </div>
         <div class="flex space-x-3">
           <Button variant="outline" @click="downloadTemplate">
@@ -21,26 +21,26 @@
     </Card>
 
     <!-- File Upload Section -->
-    <Card v-if="showUploadModal" class="p-6">
+    <Card v-if="showUploadModal" class="p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
       <div class="space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Upload Partner Data</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Upload Partner Data</h3>
           <Button variant="ghost" @click="showUploadModal = false">
             <X class="w-4 h-4" />
           </Button>
         </div>
-        
+
         <div
           @drop="handleDrop"
           @dragover.prevent
           @dragenter.prevent
-          class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
-          :class="{ 'border-blue-400 bg-blue-50': isDragging }"
+          class="border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg p-8 text-center hover:border-blue-400 transition-colors"
+          :class="{ 'border-blue-400 bg-blue-50 dark:bg-blue-900/20': isDragging }"
         >
-          <Upload class="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p class="text-lg font-medium text-gray-700 mb-2">
-            Drop your CSV file here, or 
-            <label class="text-blue-600 hover:text-blue-700 cursor-pointer">
+          <Upload class="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Drop your CSV file here, or
+            <label class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer">
               browse
               <input
                 type="file"
@@ -50,18 +50,18 @@
               />
             </label>
           </p>
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
             Supports CSV files up to 10MB with up to 1000 partners
           </p>
         </div>
 
-        <div v-if="uploadedFile" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div v-if="uploadedFile" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-              <FileText class="w-5 h-5 text-blue-600" />
+              <FileText class="w-5 h-5 text-blue-600 dark:text-blue-400" />
               <div>
-                <p class="font-medium text-blue-900">{{ uploadedFile.name }}</p>
-                <p class="text-sm text-blue-600">{{ formatFileSize(uploadedFile.size) }}</p>
+                <p class="font-medium text-blue-900 dark:text-blue-200">{{ uploadedFile.name }}</p>
+                <p class="text-sm text-blue-600 dark:text-blue-400">{{ formatFileSize(uploadedFile.size) }}</p>
               </div>
             </div>
             <Button variant="ghost" size="sm" @click="removeFile">
@@ -84,14 +84,14 @@
     </Card>
 
     <!-- Processing Status -->
-    <Card v-if="isProcessing" class="p-6">
+    <Card v-if="isProcessing" class="p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
       <div class="space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Processing Status</h3>
-          <span class="text-sm text-gray-600">{{ processedCount }}/{{ totalCount }} completed</span>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Processing Status</h3>
+          <span class="text-sm text-gray-600 dark:text-gray-400">{{ processedCount }}/{{ totalCount }} completed</span>
         </div>
-        
-        <div class="w-full bg-gray-200 rounded-full h-2">
+
+        <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
           <div
             class="bg-blue-600 h-2 rounded-full transition-all duration-300"
             :style="{ width: `${(processedCount / totalCount) * 100}%` }"
@@ -99,17 +99,17 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="text-center p-4 bg-green-50 rounded-lg">
-            <div class="text-2xl font-bold text-green-600">{{ successCount }}</div>
-            <div class="text-sm text-green-700">Successful</div>
+          <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ successCount }}</div>
+            <div class="text-sm text-green-700 dark:text-green-300">Successful</div>
           </div>
-          <div class="text-center p-4 bg-yellow-50 rounded-lg">
-            <div class="text-2xl font-bold text-yellow-600">{{ pendingCount }}</div>
-            <div class="text-sm text-yellow-700">Pending Review</div>
+          <div class="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ pendingCount }}</div>
+            <div class="text-sm text-yellow-700 dark:text-yellow-300">Pending Review</div>
           </div>
-          <div class="text-center p-4 bg-red-50 rounded-lg">
-            <div class="text-2xl font-bold text-red-600">{{ errorCount }}</div>
-            <div class="text-sm text-red-700">Errors</div>
+          <div class="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ errorCount }}</div>
+            <div class="text-sm text-red-700 dark:text-red-300">Errors</div>
           </div>
         </div>
 
@@ -123,10 +123,10 @@
     </Card>
 
     <!-- Results Summary -->
-    <Card v-if="processingComplete" class="p-6">
+    <Card v-if="processingComplete" class="p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
       <div class="space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Processing Complete</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Processing Complete</h3>
           <div class="flex space-x-2">
             <Button variant="outline" @click="downloadResults">
               <Download class="w-4 h-4 mr-2" />
@@ -140,41 +140,41 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="text-center p-4 bg-blue-50 rounded-lg">
-            <div class="text-2xl font-bold text-blue-600">{{ totalCount }}</div>
-            <div class="text-sm text-blue-700">Total Processed</div>
+          <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ totalCount }}</div>
+            <div class="text-sm text-blue-700 dark:text-blue-300">Total Processed</div>
           </div>
-          <div class="text-center p-4 bg-green-50 rounded-lg">
-            <div class="text-2xl font-bold text-green-600">{{ successCount }}</div>
-            <div class="text-sm text-green-700">Auto-Approved</div>
+          <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ successCount }}</div>
+            <div class="text-sm text-green-700 dark:text-green-300">Auto-Approved</div>
           </div>
-          <div class="text-center p-4 bg-yellow-50 rounded-lg">
-            <div class="text-2xl font-bold text-yellow-600">{{ pendingCount }}</div>
-            <div class="text-sm text-yellow-700">Need Review</div>
+          <div class="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ pendingCount }}</div>
+            <div class="text-sm text-yellow-700 dark:text-yellow-300">Need Review</div>
           </div>
-          <div class="text-center p-4 bg-red-50 rounded-lg">
-            <div class="text-2xl font-bold text-red-600">{{ errorCount }}</div>
-            <div class="text-sm text-red-700">Failed</div>
+          <div class="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+            <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ errorCount }}</div>
+            <div class="text-sm text-red-700 dark:text-red-300">Failed</div>
           </div>
         </div>
 
         <!-- Error Details -->
         <div v-if="errors.length > 0" class="space-y-3">
-          <h4 class="font-semibold text-gray-900">Processing Errors</h4>
+          <h4 class="font-semibold text-gray-900 dark:text-white">Processing Errors</h4>
           <div class="max-h-40 overflow-y-auto space-y-2">
             <div
               v-for="error in errors.slice(0, 5)"
               :key="error.id"
-              class="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
+              class="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg"
             >
               <div>
-                <p class="font-medium text-red-900">Row {{ error.row }}: {{ error.company }}</p>
-                <p class="text-sm text-red-700">{{ error.message }}</p>
+                <p class="font-medium text-red-900 dark:text-red-200">Row {{ error.row }}: {{ error.company }}</p>
+                <p class="text-sm text-red-700 dark:text-red-300">{{ error.message }}</p>
               </div>
-              <AlertTriangle class="w-5 h-5 text-red-500" />
+              <AlertTriangle class="w-5 h-5 text-red-500 dark:text-red-400" />
             </div>
           </div>
-          <p v-if="errors.length > 5" class="text-sm text-gray-600">
+          <p v-if="errors.length > 5" class="text-sm text-gray-600 dark:text-gray-400">
             And {{ errors.length - 5 }} more errors...
           </p>
         </div>
@@ -189,31 +189,31 @@
     </Card>
 
     <!-- Recent Batch Operations -->
-    <Card class="p-6">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Batch Operations</h3>
+    <Card class="p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Batch Operations</h3>
       <div class="space-y-3">
         <div
           v-for="batch in recentBatches"
           :key="batch.id"
-          class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+          class="flex items-center justify-between p-4 border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700"
         >
           <div class="flex items-center space-x-4">
             <div :class="getBatchStatusClass(batch.status)">
               <component :is="getBatchStatusIcon(batch.status)" class="w-5 h-5" />
             </div>
             <div>
-              <p class="font-medium text-gray-900">{{ batch.filename }}</p>
-              <p class="text-sm text-gray-600">
+              <p class="font-medium text-gray-900 dark:text-white">{{ batch.filename }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
                 {{ batch.totalCount }} partners • {{ formatDate(batch.createdAt) }}
               </p>
             </div>
           </div>
           <div class="flex items-center space-x-3">
             <div class="text-right">
-              <p class="text-sm font-medium text-gray-900">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
                 {{ batch.successCount }}/{{ batch.totalCount }} successful
               </p>
-              <p class="text-xs text-gray-600">{{ batch.status }}</p>
+              <p class="text-xs text-gray-600 dark:text-gray-400">{{ batch.status }}</p>
             </div>
             <Button variant="ghost" size="sm" @click="viewBatchDetails(batch)">
               <Eye class="w-4 h-4" />
@@ -595,13 +595,13 @@ export default {
       const baseClass = "w-10 h-10 rounded-full flex items-center justify-center"
       switch (status) {
         case 'completed':
-          return `${baseClass} bg-green-100 text-green-600`
+          return `${baseClass} bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400`
         case 'processing':
-          return `${baseClass} bg-blue-100 text-blue-600`
+          return `${baseClass} bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400`
         case 'failed':
-          return `${baseClass} bg-red-100 text-red-600`
+          return `${baseClass} bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400`
         default:
-          return `${baseClass} bg-gray-100 text-gray-600`
+          return `${baseClass} bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400`
       }
     }
 

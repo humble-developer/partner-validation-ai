@@ -2,18 +2,18 @@
   <Card class="p-6 hover:shadow-lg transition-all duration-300">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-medium text-gray-600">{{ title }}</p>
-        <p class="text-3xl font-bold text-gray-900 mt-2">{{ value }}</p>
+        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{{ title }}</p>
+        <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ value }}</p>
         <div class="flex items-center mt-2">
           <span
             :class="[
               'text-sm font-medium',
-              trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-gray-600'
+              trend === 'up' ? 'text-green-600 dark:text-green-400' : trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'
             ]"
           >
             {{ change }}
           </span>
-          <span class="text-sm text-gray-500 ml-1">vs last period</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400 ml-1">vs last period</span>
         </div>
       </div>
       <div :class="`w-12 h-12 rounded-lg flex items-center justify-center ${getColorClass(color)}`">

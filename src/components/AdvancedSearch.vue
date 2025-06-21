@@ -18,7 +18,7 @@
             variant="ghost"
             size="sm"
             @click="clearFilters"
-            class="text-gray-500 hover:text-gray-700"
+            class="text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
           >
             <X class="w-4 h-4 mr-2" />
             Clear

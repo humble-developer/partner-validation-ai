@@ -27,6 +27,7 @@ export function useNotifications() {
 
     notifications.value.unshift(newNotification)
     unreadCount.value++
+    console.log('Added notification:', newNotification.title, 'Total:', notifications.value.length)
 
     // Show toast for important notifications
     if (notification.showToast !== false) {
@@ -111,10 +112,12 @@ export function useNotifications() {
 
   // Predefined notification creators
   const notifyValidationComplete = (partnerName, confidence, needsReview) => {
+    console.log('🔔 Creating validation complete notification:', { partnerName, confidence, needsReview })
+
     return addNotification({
       type: needsReview ? NOTIFICATION_TYPES.REVIEW_REQUIRED : NOTIFICATION_TYPES.VALIDATION_COMPLETE,
       title: needsReview ? 'Review Required' : 'Validation Complete',
-      message: needsReview 
+      message: needsReview
         ? `${partnerName} requires human review (${confidence}% confidence)`
         : `${partnerName} validation completed successfully (${confidence}% confidence)`,
       icon: needsReview ? 'AlertTriangle' : 'CheckCircle',
@@ -167,6 +170,21 @@ export function useNotifications() {
     })
   }
 
+  // Initialize demo notifications on first load
+  const initializeDemoNotifications = () => {
+    if (notifications.value.length === 0) {
+      console.log('Initializing demo notifications...')
+      addNotification({
+        type: NOTIFICATION_TYPES.SYSTEM_ALERT,
+        title: 'Welcome to PartnerAI',
+        message: 'Your AI-powered partner validation system is ready!',
+        icon: 'CheckCircle',
+        priority: 'medium',
+        showToast: false // Don't show toast for demo notifications
+      })
+    }
+  }
+
   // Initialize with browser notifications permission
   const requestNotificationPermission = async () => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -185,6 +203,13 @@ export function useNotifications() {
         ...options
       })
     }
+  }
+
+  // Initialize demo notifications on first load
+  if (typeof window !== 'undefined') {
+    setTimeout(() => {
+      initializeDemoNotifications()
+    }, 1000)
   }
 
   return {

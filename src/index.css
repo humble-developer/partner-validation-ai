@@ -55,6 +55,344 @@ html {
   background: #94a3b8;
 }
 
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Enhanced dark mode transitions */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode gradient backgrounds */
+.dark .bg-gradient-to-br {
+  background: linear-gradient(to bottom right, #0f172a, #1e293b, #334155) !important;
+}
+
+.dark .bg-gradient-to-r {
+  background: linear-gradient(to right, #1e293b, #334155) !important;
+}
+
+/* Dark mode card enhancements */
+.dark .bg-white {
+  background-color: #1e293b !important;
+}
+
+.dark .bg-white\/80 {
+  background: rgba(30, 41, 59, 0.8) !important;
+}
+
+.dark .bg-white\/90 {
+  background: rgba(30, 41, 59, 0.9) !important;
+}
+
+/* Dark mode text colors */
+.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-800 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-500 {
+  color: #64748b !important;
+}
+
+.dark .text-gray-400 {
+  color: #475569 !important;
+}
+
+/* Dark mode heading colors */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #f1f5f9 !important;
+}
+
+/* Specific dark mode heading overrides */
+.dark h1 {
+  color: #ffffff !important;
+}
+
+.dark h2 {
+  color: #f8fafc !important;
+}
+
+.dark h3 {
+  color: #f1f5f9 !important;
+}
+
+.dark h4 {
+  color: #e2e8f0 !important;
+}
+
+.dark h5 {
+  color: #cbd5e1 !important;
+}
+
+.dark h6 {
+  color: #94a3b8 !important;
+}
+
+/* Dark mode text elements */
+.dark p {
+  color: #e2e8f0;
+}
+
+.dark span {
+  color: #cbd5e1;
+}
+
+.dark div {
+  color: #e2e8f0;
+}
+
+/* Dark mode link colors */
+.dark a {
+  color: #60a5fa;
+}
+
+.dark a:hover {
+  color: #93c5fd;
+}
+
+/* Dark mode label colors */
+.dark label {
+  color: #f1f5f9 !important;
+}
+
+/* Dark mode border enhancements */
+.dark .border-white\/20 {
+  border-color: rgba(71, 85, 105, 0.3) !important;
+}
+
+.dark .border-white\/30 {
+  border-color: rgba(71, 85, 105, 0.4) !important;
+}
+
+.dark .border-gray-200 {
+  border-color: #374151 !important;
+}
+
+.dark .border-slate-200 {
+  border-color: #374151 !important;
+}
+
+/* Dark mode hover states */
+.dark .hover\:bg-white:hover {
+  background-color: #334155 !important;
+}
+
+.dark .hover\:bg-gray-50:hover {
+  background-color: #374151 !important;
+}
+
+.dark .hover\:border-slate-300:hover {
+  border-color: #4b5563 !important;
+}
+
+/* Dark mode specific backgrounds */
+.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.dark .bg-green-50 {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+.dark .bg-purple-50 {
+  background-color: rgba(168, 85, 247, 0.1) !important;
+}
+
+.dark .bg-orange-50 {
+  background-color: rgba(249, 115, 22, 0.1) !important;
+}
+
+.dark .bg-red-50 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+.dark .bg-yellow-50 {
+  background-color: rgba(234, 179, 8, 0.1) !important;
+}
+
+/* Dark mode button fixes */
+.dark button {
+  color: #f1f5f9;
+}
+
+/* Dark mode button variants */
+.dark .bg-gray-100 {
+  background-color: #374151 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: #4b5563 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark .bg-gray-300 {
+  background-color: #6b7280 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-700 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-800 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+/* Dark mode hover states for buttons */
+.dark .hover\:bg-gray-100:hover {
+  background-color: #4b5563 !important;
+}
+
+.dark .hover\:bg-gray-200:hover {
+  background-color: #6b7280 !important;
+}
+
+.dark .hover\:bg-gray-300:hover {
+  background-color: #9ca3af !important;
+}
+
+/* Dark mode border colors for buttons */
+.dark .border-gray-200 {
+  border-color: #4b5563 !important;
+}
+
+.dark .border-gray-300 {
+  border-color: #6b7280 !important;
+}
+
+/* Dark mode outline buttons */
+.dark .border-input {
+  border-color: #4b5563 !important;
+}
+
+.dark .bg-background {
+  background-color: #1e293b !important;
+}
+
+.dark .hover\:bg-accent:hover {
+  background-color: #374151 !important;
+}
+
+.dark .hover\:text-accent-foreground:hover {
+  color: #f1f5f9 !important;
+}
+
+/* Dark mode button variant overrides - Brand Colors */
+.dark .bg-secondary {
+  background-color: #6366f1 !important; /* Indigo-500 */
+  color: #ffffff !important;
+}
+
+.dark .text-secondary-foreground {
+  color: #ffffff !important;
+}
+
+.dark .hover\:bg-secondary\/80:hover {
+  background-color: #4f46e5 !important; /* Indigo-600 */
+}
+
+.dark .bg-accent {
+  background-color: #8b5cf6 !important; /* Violet-500 */
+}
+
+.dark .text-accent-foreground {
+  color: #ffffff !important;
+}
+
+.dark .hover\:bg-accent:hover {
+  background-color: #7c3aed !important; /* Violet-600 */
+}
+
+.dark .text-foreground {
+  color: #f1f5f9 !important;
+}
+
+/* Dark mode specific button fixes - Brand Colors */
+.dark button[class*="bg-secondary"] {
+  background-color: #6366f1 !important; /* Indigo-500 */
+  color: #ffffff !important;
+}
+
+.dark button[class*="variant-outline"] {
+  background-color: transparent !important;
+  color: #6366f1 !important; /* Indigo-500 text */
+  border-color: #6366f1 !important; /* Indigo-500 border */
+}
+
+.dark button[class*="variant-outline"]:hover {
+  background-color: #6366f1 !important; /* Indigo-500 background on hover */
+  color: #ffffff !important;
+  border-color: #6366f1 !important;
+}
+
+.dark button[class*="variant-ghost"] {
+  color: #6366f1 !important; /* Indigo-500 text */
+}
+
+.dark button[class*="variant-ghost"]:hover {
+  background-color: rgba(99, 102, 241, 0.1) !important; /* Indigo-500 with opacity */
+  color: #4f46e5 !important; /* Indigo-600 */
+}
+
+/* Dark mode button component class overrides - Brand Colors */
+.dark button:not([class*="bg-gradient"]):not([class*="bg-blue"]):not([class*="bg-green"]):not([class*="bg-red"]):not([class*="bg-purple"]):not([class*="bg-yellow"]) {
+  background-color: #6366f1 !important; /* Indigo-500 */
+  color: #ffffff !important;
+  border-color: #6366f1 !important;
+}
+
+.dark button:not([class*="bg-gradient"]):not([class*="bg-blue"]):not([class*="bg-green"]):not([class*="bg-red"]):not([class*="bg-purple"]):not([class*="bg-yellow"]):hover {
+  background-color: #4f46e5 !important; /* Indigo-600 */
+  color: #ffffff !important;
+}
+
+/* Specific button variant classes - Brand Colors */
+.dark .inline-flex.items-center.justify-center {
+  color: #ffffff !important;
+}
+
+.dark .inline-flex.items-center.justify-center:not([class*="bg-gradient"]):not([class*="text-white"]) {
+  background-color: #6366f1 !important; /* Indigo-500 */
+  border-color: #6366f1 !important;
+}
+
+.dark .inline-flex.items-center.justify-center:not([class*="bg-gradient"]):not([class*="text-white"]):hover {
+  background-color: #4f46e5 !important; /* Indigo-600 */
+}
+
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -114,17 +452,17 @@ html {
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 238.7 83.5% 66.7%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 238.7 83.5% 66.7%;
+    --secondary-foreground: 0 0% 100%;
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 262.1 83.3% 57.8%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;

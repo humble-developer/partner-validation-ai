@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useNotifications } from '@/composables/use-notifications'
 
 export const useValidationStore = defineStore('validation', () => {
+  // Get notifications composable
+  const { notifyValidationComplete, notifyPartnerApproved, notifyPartnerRejected } = useNotifications()
+
   // State
   const validationResults = ref([])
   const activeValidation = ref(null)
   const validationHistory = ref([])
   const completedWorkflows = ref(new Set()) // Track which partners have completed workflows
+  const acceptedRecommendations = ref(new Map()) // Track accepted recommendations by partner ID
 
   // Getters
   const pendingReviews = computed(() =>
@@ -87,6 +92,15 @@ export const useValidationStore = defineStore('validation', () => {
     }
 
     validationResults.value.unshift(validationResult)
+
+    // Send notification for validation completion
+    console.log('Sending validation complete notification for:', partnerData.companyName)
+    notifyValidationComplete(
+      partnerData.companyName,
+      aiResults.overallConfidence,
+      needsHumanReview
+    )
+
     return validationResult
   }
 
@@ -100,6 +114,13 @@ export const useValidationStore = defineStore('validation', () => {
         reviewedAt: new Date().toISOString()
       }
       
+      // Send notifications for status changes
+      if (status === 'approved') {
+        notifyPartnerApproved(validation.companyName)
+      } else if (status === 'rejected') {
+        notifyPartnerRejected(validation.companyName, reviewData.feedback || 'Did not meet validation criteria')
+      }
+
       // Move to history if completed
       if (status === 'approved' || status === 'rejected') {
         validationHistory.value.unshift({
@@ -189,6 +210,47 @@ export const useValidationStore = defineStore('validation', () => {
   const clearWorkflowCompletion = (partnerId) => {
     completedWorkflows.value.delete(partnerId)
     console.log('Cleared workflow completion for partner:', partnerId)
+  }
+
+  // Accepted recommendations management
+  const acceptRecommendation = (partnerId, type, value) => {
+    if (!acceptedRecommendations.value.has(partnerId)) {
+      acceptedRecommendations.value.set(partnerId, {})
+    }
+
+    const partnerAccepted = acceptedRecommendations.value.get(partnerId)
+    partnerAccepted[type] = {
+      value,
+      acceptedAt: new Date().toISOString()
+    }
+
+    // Update the partner data in validationResults
+    const partner = validationResults.value.find(p => p.partnerId === partnerId || p.id === partnerId)
+    if (partner) {
+      if (type === 'name') {
+        partner.companyName = value
+        partner.partnerInfo.companyName = value
+      } else if (type === 'address') {
+        partner.partnerInfo.primaryAddress = value
+      }
+    }
+
+    console.log(`Accepted ${type} recommendation for partner ${partnerId}:`, value)
+  }
+
+  const isRecommendationAccepted = (partnerId, type) => {
+    const partnerAccepted = acceptedRecommendations.value.get(partnerId)
+    return partnerAccepted && partnerAccepted[type] !== undefined
+  }
+
+  const getAcceptedRecommendation = (partnerId, type) => {
+    const partnerAccepted = acceptedRecommendations.value.get(partnerId)
+    return partnerAccepted ? partnerAccepted[type] : null
+  }
+
+  const clearAcceptedRecommendations = (partnerId) => {
+    acceptedRecommendations.value.delete(partnerId)
+    console.log('Cleared accepted recommendations for partner:', partnerId)
   }
 
   // Generate mock AI results for demonstration
@@ -292,6 +354,12 @@ export const useValidationStore = defineStore('validation', () => {
     determineIfHumanReviewNeeded,
     markWorkflowCompleted,
     isWorkflowCompleted,
-    clearWorkflowCompletion
+    clearWorkflowCompletion,
+
+    // Accepted recommendations
+    acceptRecommendation,
+    isRecommendationAccepted,
+    getAcceptedRecommendation,
+    clearAcceptedRecommendations
   }
 })

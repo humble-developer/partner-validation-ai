@@ -1,18 +1,18 @@
 <template>
   <div v-if="!partnerData" class="space-y-6">
-    <Card class="p-12 bg-white border border-slate-200 text-center">
-      <Brain class="w-12 h-12 text-slate-400 mx-auto mb-4" />
-      <h3 class="text-xl font-medium text-slate-900 mb-2">AI Validation Workflow</h3>
-      <p class="text-slate-600">Submit a partner registration to view the validation process</p>
+    <Card class="p-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center">
+      <Brain class="w-12 h-12 text-slate-400 dark:text-slate-500 mx-auto mb-4" />
+      <h3 class="text-xl font-medium text-slate-900 dark:text-white mb-2">AI Validation Workflow</h3>
+      <p class="text-slate-600 dark:text-slate-400">Submit a partner registration to view the validation process</p>
     </Card>
   </div>
 
   <div v-else class="space-y-6">
     <!-- Progress Overview -->
-    <Card class="p-6 bg-white border border-slate-200">
+    <Card class="p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
       <div class="space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-xl font-medium text-slate-900">Validation Progress</h3>
+          <h3 class="text-xl font-medium text-slate-900 dark:text-white">Validation Progress</h3>
           <Badge :class="isWorkflowComplete ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'">
             {{ isWorkflowComplete ? "Complete" : "Processing" }}
           </Badge>
@@ -20,10 +20,10 @@
 
         <div class="space-y-2">
           <div class="flex justify-between text-sm">
-            <span class="text-slate-600">Step {{ Math.min(currentStep + 1, agents.length) }} of {{ agents.length }}</span>
-            <span class="text-slate-900 font-medium">{{ Math.round(computedProgress) }}%</span>
+            <span class="text-slate-600 dark:text-slate-400">Step {{ Math.min(currentStep + 1, agents.length) }} of {{ agents.length }}</span>
+            <span class="text-slate-900 dark:text-white font-medium">{{ Math.round(computedProgress) }}%</span>
           </div>
-          <div class="w-full bg-slate-200 rounded-full h-4 overflow-hidden">
+          <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-4 overflow-hidden">
             <div
               class="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-500 ease-out rounded-full"
               :style="{ width: `${computedProgress}%` }"
@@ -31,8 +31,8 @@
           </div>
         </div>
 
-        <div class="text-center p-4 bg-slate-50 border border-slate-200 rounded-lg">
-          <p class="text-slate-700">
+        <div class="text-center p-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg">
+          <p class="text-slate-700 dark:text-slate-300">
             <strong>Validating:</strong> {{ partnerData.companyName }}
           </p>
         </div>
@@ -44,31 +44,31 @@
       <Card
         v-for="(agent, index) in agents"
         :key="index"
-        :class="`p-6 bg-white border transition-all duration-300 ${
-          agent.status === 'active' ? 'border-blue-500 shadow-md' : 'border-slate-200'
+        :class="`p-6 bg-white dark:bg-slate-800 border transition-all duration-300 ${
+          agent.status === 'active' ? 'border-blue-500 shadow-md' : 'border-slate-200 dark:border-slate-700'
         }`"
       >
         <div class="space-y-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
               <div :class="`w-10 h-10 rounded-lg flex items-center justify-center ${
-                agent.status === 'completed' ? 'bg-green-100' :
-                agent.status === 'active' ? 'bg-blue-600' : 'bg-slate-100'
+                agent.status === 'completed' ? 'bg-green-100 dark:bg-green-900/20' :
+                agent.status === 'active' ? 'bg-blue-600' : 'bg-slate-100 dark:bg-slate-700'
               }`">
-                <component 
-                  :is="agent.icon" 
+                <component
+                  :is="agent.icon"
                   :class="`w-5 h-5 ${
-                    agent.status === 'completed' ? 'text-green-600' :
-                    agent.status === 'active' ? 'text-white' : 'text-slate-400'
-                  }`" 
+                    agent.status === 'completed' ? 'text-green-600 dark:text-green-400' :
+                    agent.status === 'active' ? 'text-white' : 'text-slate-400 dark:text-slate-500'
+                  }`"
                 />
               </div>
               <div>
-                <h4 class="font-medium text-slate-900">{{ agent.name }}</h4>
-                <p class="text-sm text-slate-600">{{ agent.task }}</p>
+                <h4 class="font-medium text-slate-900 dark:text-white">{{ agent.name }}</h4>
+                <p class="text-sm text-slate-600 dark:text-slate-400">{{ agent.task }}</p>
               </div>
             </div>
-            
+
             <div class="text-right">
               <Badge
                 v-if="agent.status === 'completed'"
@@ -76,19 +76,134 @@
               >
                 {{ agent.confidence }}%
               </Badge>
-              <div v-if="agent.status === 'active'" class="flex items-center space-x-2 text-xs text-slate-600">
+              <div v-if="agent.status === 'active'" class="flex items-center space-x-2 text-xs text-slate-600 dark:text-slate-400">
                 <div class="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
                 <span>Processing</span>
               </div>
             </div>
           </div>
 
-          <p 
-            v-if="agent.status === 'completed'" 
-            class="text-xs text-slate-600 bg-slate-50 border border-slate-200 p-3 rounded"
-          >
-            ✓ {{ agent.details }}
-          </p>
+          <!-- Enhanced Agent Details -->
+          <div v-if="agent.status === 'completed'" class="space-y-3">
+            <!-- Basic Details -->
+            <div class="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 p-3 rounded">
+              ✓ {{ agent.details }}
+            </div>
+
+            <!-- Enhanced Details for specific agents -->
+            <div v-if="getAgentEnhancedData(agent)" class="space-y-3">
+              <!-- Partner Name Agent Details -->
+              <div v-if="agent.name === 'Partner Name Validator' && getAgentEnhancedData(agent).recommended_partner_name"
+                   class="bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-blue-500 dark:border-blue-400 p-4 rounded-r-lg">
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">💡 Recommended Name</h5>
+                    <Button
+                      v-if="!isNameAccepted"
+                      size="sm"
+                      variant="outline"
+                      @click="acceptRecommendedName(getAgentEnhancedData(agent).recommended_partner_name)"
+                      class="text-xs px-3 py-1.5 h-auto bg-blue-600 text-white border-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                    >
+                      Accept
+                    </Button>
+                    <span v-else class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
+                      ✓ Accepted
+                    </span>
+                  </div>
+                  <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <p class="text-sm text-blue-900 dark:text-blue-200 font-medium">
+                      {{ getAgentEnhancedData(agent).recommended_partner_name }}
+                    </p>
+                  </div>
+                  <div v-if="getAgentEnhancedData(agent).alternative_names?.length" class="space-y-2">
+                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Alternative Names:</p>
+                    <div class="flex flex-wrap gap-2">
+                      <span v-for="name in getAgentEnhancedData(agent).alternative_names"
+                            :key="name"
+                            class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded border">
+                        {{ name }}
+                      </span>
+                    </div>
+                  </div>
+                  <div v-if="getAgentEnhancedData(agent).sources" class="space-y-2">
+                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300">📋 Sources:</p>
+                    <div class="flex flex-wrap gap-2">
+                      <a v-for="(source, idx) in getAgentEnhancedData(agent).sources.split(', ')"
+                         :key="idx"
+                         :href="source.trim()"
+                         target="_blank"
+                         class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                        Source {{ idx + 1 }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Address Validator Details -->
+              <div v-if="agent.name === 'Address Validator' && getAgentEnhancedData(agent).recommended_address"
+                   class="bg-green-50/50 dark:bg-green-900/10 border-l-4 border-green-500 dark:border-green-400 p-4 rounded-r-lg">
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h5 class="text-sm font-semibold text-green-900 dark:text-green-200">📍 Recommended Address</h5>
+                    <Button
+                      v-if="!isAddressAccepted"
+                      size="sm"
+                      variant="outline"
+                      @click="acceptRecommendedAddress(getAgentEnhancedData(agent).recommended_address)"
+                      class="text-xs px-3 py-1.5 h-auto bg-green-600 text-white border-green-600 hover:bg-green-700 transition-colors duration-200"
+                    >
+                      Accept
+                    </Button>
+                    <span v-else class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
+                      ✓ Accepted
+                    </span>
+                  </div>
+                  <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-green-200 dark:border-green-700">
+                    <p class="text-sm text-green-900 dark:text-green-200 font-medium">
+                      {{ getAgentEnhancedData(agent).recommended_address }}
+                    </p>
+                  </div>
+                  <div v-if="getAgentEnhancedData(agent).sources" class="space-y-2">
+                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300">📋 Sources:</p>
+                    <div class="flex flex-wrap gap-2">
+                      <a v-for="(source, idx) in getAgentEnhancedData(agent).sources.split(', ')"
+                         :key="idx"
+                         :href="source.trim()"
+                         target="_blank"
+                         class="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 underline bg-white dark:bg-slate-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 transition-colors duration-200">
+                        Source {{ idx + 1 }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Subsidiary Discovery Details -->
+              <div v-if="agent.name === 'Subsidiary Discovery Agent' && getAgentEnhancedData(agent).subsidiaries?.length"
+                   class="bg-purple-50/50 dark:bg-purple-900/10 border-l-4 border-purple-500 dark:border-purple-400 p-4 rounded-r-lg">
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h5 class="text-sm font-semibold text-purple-900 dark:text-purple-200">🏢 Discovered Subsidiaries</h5>
+                    <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs px-2 py-1 rounded-full font-medium border border-purple-200 dark:border-purple-600">
+                      {{ getAgentEnhancedData(agent).subsidiaries.length }} Found
+                    </span>
+                  </div>
+                  <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
+                    <div class="space-y-2">
+                      <div v-for="subsidiary in getAgentEnhancedData(agent).subsidiaries"
+                           :key="subsidiary.name"
+                           class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 transition-colors duration-200">
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ subsidiary.name }}</p>
+                        <p v-if="subsidiary.address" class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ subsidiary.address }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </Card>
     </div>
@@ -96,14 +211,14 @@
     <!-- Human Review Required -->
     <Card
       v-if="shouldShowReviewRequired"
-      class="p-6 bg-amber-50 border border-amber-200"
+      class="p-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700"
     >
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <Users class="w-6 h-6 text-amber-600" />
+          <Users class="w-6 h-6 text-amber-600 dark:text-amber-400" />
           <div>
-            <h4 class="text-lg font-medium text-slate-900">Review Required</h4>
-            <p class="text-amber-700">
+            <h4 class="text-lg font-medium text-slate-900 dark:text-white">Review Required</h4>
+            <p class="text-amber-700 dark:text-amber-300">
               {{ reviewRequiredMessage }}
             </p>
           </div>
@@ -127,6 +242,7 @@ import Badge from '@/components/ui/badge.vue'
 import Progress from '@/components/ui/progress.vue'
 import { Brain, Search, CheckCircle, Clock, AlertCircle, Users, Building, MapPin, Network } from 'lucide-vue-next'
 import { useValidationStore } from '@/stores/validation'
+import { useToast } from '@/composables/use-toast'
 
 export default {
   name: 'AIValidationWorkflow',
@@ -154,6 +270,7 @@ export default {
   emits: ['navigate-to-review'],
   setup(props, { emit }) {
     const validationStore = useValidationStore()
+    const { toast } = useToast()
     const currentStep = ref(0)
     const progress = ref(0)
     const workflowStarted = ref(false)
@@ -394,11 +511,11 @@ export default {
         threshold = 60 // Subsidiary threshold
       }
 
-      // Return appropriate classes with proper hover states
+      // Return appropriate classes with proper hover states and dark mode support
       if (confidence >= threshold) {
-        return 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200 hover:text-green-800 transition-colors duration-200'
+        return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700 hover:bg-green-200 dark:hover:bg-green-900/30 hover:text-green-800 dark:hover:text-green-300 transition-colors duration-200'
       } else {
-        return 'bg-yellow-100 text-yellow-700 border border-yellow-200 hover:bg-yellow-200 hover:text-yellow-800 transition-colors duration-200'
+        return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-700 hover:bg-yellow-200 dark:hover:bg-yellow-900/30 hover:text-yellow-800 dark:hover:text-yellow-300 transition-colors duration-200'
       }
     }
 
@@ -689,6 +806,86 @@ export default {
       workflowStarted.value = false
     })
 
+    // Helper function to get enhanced agent data from API response
+    const getAgentEnhancedData = (agent) => {
+      if (!props.partnerData?.rawApiResponse?.validation_results) return null
+
+      const validationResults = props.partnerData.rawApiResponse.validation_results
+
+      switch (agent.name) {
+        case 'Partner Name Validator':
+          return validationResults.partner_name || null
+        case 'Address Validator':
+          return validationResults.partner_address || null
+        case 'Subsidiary Discovery Agent':
+          return validationResults.partner_subsidiaries || null
+        default:
+          return null
+      }
+    }
+
+    // Computed properties for accepted recommendations
+    const isNameAccepted = computed(() => {
+      if (!props.partnerData) return false
+      const partnerId = props.partnerData.id || props.partnerData.partnerId
+      return validationStore.isRecommendationAccepted(partnerId, 'name')
+    })
+
+    const isAddressAccepted = computed(() => {
+      if (!props.partnerData) return false
+      const partnerId = props.partnerData.id || props.partnerData.partnerId
+      return validationStore.isRecommendationAccepted(partnerId, 'address')
+    })
+
+    // Accept recommended partner name
+    const acceptRecommendedName = (recommendedName) => {
+      if (props.partnerData?.partnerInfo) {
+        const partnerId = props.partnerData.id || props.partnerData.partnerId
+
+        // Update the store
+        validationStore.acceptRecommendation(partnerId, 'name', recommendedName)
+
+        // Update props data
+        props.partnerData.partnerInfo.companyName = recommendedName
+
+        // Update in validation store
+        const validation = validationStore.getValidationById(props.partnerData.id)
+        if (validation) {
+          validation.companyName = recommendedName
+          validation.partnerInfo.companyName = recommendedName
+        }
+
+        toast({
+          title: "Partner Name Updated",
+          description: `Partner name updated to: ${recommendedName}`,
+        })
+      }
+    }
+
+    // Accept recommended address
+    const acceptRecommendedAddress = (recommendedAddress) => {
+      if (props.partnerData?.partnerInfo) {
+        const partnerId = props.partnerData.id || props.partnerData.partnerId
+
+        // Update the store
+        validationStore.acceptRecommendation(partnerId, 'address', recommendedAddress)
+
+        // Update props data
+        props.partnerData.partnerInfo.primaryAddress = recommendedAddress
+
+        // Update in validation store
+        const validation = validationStore.getValidationById(props.partnerData.id)
+        if (validation) {
+          validation.partnerInfo.primaryAddress = recommendedAddress
+        }
+
+        toast({
+          title: "Partner Address Updated",
+          description: `Partner address updated to: ${recommendedAddress}`,
+        })
+      }
+    }
+
     return {
       currentStep,
       progress,
@@ -699,7 +896,12 @@ export default {
       reviewRequiredMessage,
       navigateToReview,
       isInitialMount,
-      getConfidenceBadgeClass
+      getConfidenceBadgeClass,
+      getAgentEnhancedData,
+      acceptRecommendedName,
+      acceptRecommendedAddress,
+      isNameAccepted,
+      isAddressAccepted
     }
   }
 }

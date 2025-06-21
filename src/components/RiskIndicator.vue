@@ -1,8 +1,8 @@
 <template>
   <div class="flex items-center justify-between">
-    <span class="text-sm font-medium text-gray-700">{{ label }}</span>
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ label }}</span>
     <div class="flex items-center space-x-2">
-      <div class="w-16 bg-gray-200 rounded-full h-2">
+      <div class="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
         <div
           :class="`h-2 rounded-full ${getRiskColor(level)}`"
           :style="{ width: `${score}%` }"
@@ -46,10 +46,10 @@ export default {
 
     const getRiskBadgeClass = (level) => {
       switch (level) {
-        case 'low': return 'bg-green-100 text-green-800'
-        case 'medium': return 'bg-yellow-100 text-yellow-800'
-        case 'high': return 'bg-red-100 text-red-800'
-        default: return 'bg-gray-100 text-gray-800'
+        case 'low': return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+        case 'medium': return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300'
+        case 'high': return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
+        default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
       }
     }
 

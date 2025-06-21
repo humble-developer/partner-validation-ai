@@ -8,13 +8,13 @@
             <Building class="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">{{ partner.companyName }}</h1>
-            <p class="text-gray-600">{{ partner.businessType }}</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ partner.companyName }}</h1>
+            <p class="text-gray-600 dark:text-gray-400">{{ partner.businessType }}</p>
             <div class="flex items-center space-x-4 mt-2">
               <span :class="getStatusClass(partner.status)">
                 {{ getStatusLabel(partner.status) }}
               </span>
-              <span class="text-sm text-gray-500">
+              <span class="text-sm text-gray-500 dark:text-gray-400">
                 Validated {{ formatDate(partner.validatedAt) }}
               </span>
             </div>
@@ -38,7 +38,7 @@
       <!-- Company Information -->
       <div class="lg:col-span-2 space-y-6">
         <Card class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Company Information</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InfoField label="Website" :value="partner.website" type="link" />
             <InfoField label="Industry" :value="partner.industry" />
@@ -50,7 +50,7 @@
         </Card>
 
         <Card class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Contact Information</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InfoField label="Primary Contact" :value="partner.primaryContact" />
             <InfoField label="Email" :value="partner.email" type="email" />
@@ -61,25 +61,25 @@
 
         <!-- Validation History -->
         <Card class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Validation History</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Validation History</h3>
           <div class="space-y-3">
             <div
               v-for="validation in partner.validationHistory"
               :key="validation.id"
-              class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg"
             >
               <div class="flex items-center space-x-3">
                 <div :class="getValidationIconClass(validation.result)">
                   <component :is="getValidationIcon(validation.result)" class="w-4 h-4" />
                 </div>
                 <div>
-                  <p class="font-medium text-gray-900">{{ validation.type }}</p>
-                  <p class="text-sm text-gray-600">{{ formatDate(validation.date) }}</p>
+                  <p class="font-medium text-gray-900 dark:text-white">{{ validation.type }}</p>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ formatDate(validation.date) }}</p>
                 </div>
               </div>
               <div class="text-right">
-                <p class="font-semibold text-gray-900">{{ validation.confidence }}%</p>
-                <p class="text-sm text-gray-600">{{ validation.result }}</p>
+                <p class="font-semibold text-gray-900 dark:text-white">{{ validation.confidence }}%</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ validation.result }}</p>
               </div>
             </div>
           </div>
@@ -90,7 +90,7 @@
       <div class="space-y-6">
         <!-- Confidence Score -->
         <Card class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Confidence Score</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confidence Score</h3>
           <div class="text-center">
             <div class="relative w-24 h-24 mx-auto mb-4">
               <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
@@ -101,7 +101,7 @@
                   stroke="currentColor"
                   stroke-width="8"
                   fill="transparent"
-                  class="text-gray-200"
+                  class="text-gray-200 dark:text-gray-600"
                 />
                 <circle
                   cx="50"
@@ -116,16 +116,16 @@
                 />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-2xl font-bold text-gray-900">{{ partner.confidence }}%</span>
+                <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ partner.confidence }}%</span>
               </div>
             </div>
-            <p class="text-sm text-gray-600">Overall Validation Score</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Overall Validation Score</p>
           </div>
         </Card>
 
         <!-- Risk Assessment -->
         <Card class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Risk Assessment</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Risk Assessment</h3>
           <div class="space-y-3">
             <RiskIndicator
               label="Financial Risk"
@@ -147,7 +147,7 @@
 
         <!-- Quick Actions -->
         <Card class="p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
           <div class="space-y-3">
             <Button variant="outline" class="w-full justify-start" @click="downloadReport">
               <Download class="w-4 h-4 mr-2" />
