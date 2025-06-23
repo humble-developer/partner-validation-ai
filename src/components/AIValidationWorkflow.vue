@@ -107,9 +107,14 @@
                     >
                       Accept
                     </Button>
-                    <span v-else class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
-                      ✓ Accepted
-                    </span>
+                    <div v-else class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
+                      <div class="flex items-center space-x-1">
+                        <span>✓ Accepted</span>
+                      </div>
+                      <div v-if="originalName" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        Changed from: "{{ originalName }}"
+                      </div>
+                    </div>
                   </div>
                   <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
                     <p class="text-sm text-blue-900 dark:text-blue-200 font-medium">
@@ -127,15 +132,27 @@
                     </div>
                   </div>
                   <div v-if="getAgentEnhancedData(agent).sources" class="space-y-2">
-                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300">📋 Sources:</p>
-                    <div class="flex flex-wrap gap-2">
-                      <a v-for="(source, idx) in getAgentEnhancedData(agent).sources.split(', ')"
-                         :key="idx"
-                         :href="source.trim()"
-                         target="_blank"
-                         class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
-                        Source {{ idx + 1 }}
-                      </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      @click="toggleNameSources"
+                      class="text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-0 h-auto justify-start"
+                    >
+                      <ChevronDown v-if="!showNameSources" class="w-3 h-3 mr-1" />
+                      <ChevronUp v-else class="w-3 h-3 mr-1" />
+                      📋 Sources ({{ parseSources(getAgentEnhancedData(agent).sources).length }})
+                    </Button>
+                    <div v-if="showNameSources" class="space-y-2 pl-4 border-l-2 border-blue-200 dark:border-blue-700">
+                      <div class="space-y-1">
+                        <a v-for="(source, idx) in parseSources(getAgentEnhancedData(agent).sources)"
+                           :key="idx"
+                           :href="source"
+                           target="_blank"
+                           class="flex items-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                          <span class="font-medium mr-2">{{ idx + 1 }}.</span>
+                          <span class="truncate">{{ formatSourceUrl(source) }}</span>
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -156,9 +173,14 @@
                     >
                       Accept
                     </Button>
-                    <span v-else class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
-                      ✓ Accepted
-                    </span>
+                    <div v-else class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
+                      <div class="flex items-center space-x-1">
+                        <span>✓ Accepted</span>
+                      </div>
+                      <div v-if="originalAddress" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        Changed from: "{{ originalAddress }}"
+                      </div>
+                    </div>
                   </div>
                   <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-green-200 dark:border-green-700">
                     <p class="text-sm text-green-900 dark:text-green-200 font-medium">
@@ -166,15 +188,27 @@
                     </p>
                   </div>
                   <div v-if="getAgentEnhancedData(agent).sources" class="space-y-2">
-                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300">📋 Sources:</p>
-                    <div class="flex flex-wrap gap-2">
-                      <a v-for="(source, idx) in getAgentEnhancedData(agent).sources.split(', ')"
-                         :key="idx"
-                         :href="source.trim()"
-                         target="_blank"
-                         class="text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 underline bg-white dark:bg-slate-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 transition-colors duration-200">
-                        Source {{ idx + 1 }}
-                      </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      @click="toggleAddressSources"
+                      class="text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 p-0 h-auto justify-start"
+                    >
+                      <ChevronDown v-if="!showAddressSources" class="w-3 h-3 mr-1" />
+                      <ChevronUp v-else class="w-3 h-3 mr-1" />
+                      📋 Sources ({{ parseSources(getAgentEnhancedData(agent).sources).length }})
+                    </Button>
+                    <div v-if="showAddressSources" class="space-y-2 pl-4 border-l-2 border-green-200 dark:border-green-700">
+                      <div class="space-y-1">
+                        <a v-for="(source, idx) in parseSources(getAgentEnhancedData(agent).sources)"
+                           :key="idx"
+                           :href="source"
+                           target="_blank"
+                           class="flex items-center text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 transition-colors duration-200">
+                          <span class="font-medium mr-2">{{ idx + 1 }}.</span>
+                          <span class="truncate">{{ formatSourceUrl(source) }}</span>
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -240,7 +274,7 @@ import Card from '@/components/ui/card.vue'
 import Button from '@/components/ui/button.vue'
 import Badge from '@/components/ui/badge.vue'
 import Progress from '@/components/ui/progress.vue'
-import { Brain, Search, CheckCircle, Clock, AlertCircle, Users, Building, MapPin, Network } from 'lucide-vue-next'
+import { Brain, Search, CheckCircle, Clock, AlertCircle, Users, Building, MapPin, Network, ChevronDown, ChevronUp } from 'lucide-vue-next'
 import { useValidationStore } from '@/stores/validation'
 import { useToast } from '@/composables/use-toast'
 
@@ -259,7 +293,9 @@ export default {
     Users,
     Building,
     MapPin,
-    Network
+    Network,
+    ChevronDown,
+    ChevronUp
   },
   props: {
     partnerData: {
@@ -274,6 +310,10 @@ export default {
     const currentStep = ref(0)
     const progress = ref(0)
     const workflowStarted = ref(false)
+    const showNameSources = ref(false)
+    const showAddressSources = ref(false)
+    const originalName = ref('')
+    const originalAddress = ref('')
     let timer = null
 
     // Helper function to get workflow state key
@@ -542,9 +582,9 @@ export default {
 
       // Check if we have specific reasons from API
       if (apiResponse?.validation_results?.reflection?.areas_needing_human_review) {
-        const areas = Object.keys(apiResponse.validation_results.reflection.areas_needing_human_review)
+        const areas = apiResponse?.validation_results?.reflection?.areas_needing_human_review;
         if (areas.length > 0) {
-          const formattedAreas = areas.map(area => formatAreaName(area))
+          const formattedAreas = areas.map(area => formatAreaName(area.field));
 
           if (formattedAreas.length === 1) {
             return `Manual review required for ${formattedAreas[0].toLowerCase()}.`
@@ -783,6 +823,13 @@ export default {
     onMounted(() => {
       console.log('AIValidationWorkflow component mounted')
       updateAgentStatuses()
+
+      // Initialize original values
+      if (props.partnerData?.partnerInfo) {
+        originalName.value = props.partnerData.partnerInfo.companyName || ''
+        originalAddress.value = props.partnerData.partnerInfo.primaryAddress || ''
+      }
+
       // Don't start workflow here - let the watch handle it
     })
 
@@ -841,6 +888,7 @@ export default {
     const acceptRecommendedName = (recommendedName) => {
       if (props.partnerData?.partnerInfo) {
         const partnerId = props.partnerData.id || props.partnerData.partnerId
+        const previousName = originalName.value || props.partnerData.partnerInfo.companyName
 
         // Update the store
         validationStore.acceptRecommendation(partnerId, 'name', recommendedName)
@@ -857,7 +905,7 @@ export default {
 
         toast({
           title: "Partner Name Updated",
-          description: `Partner name updated to: ${recommendedName}`,
+          description: `Name changed from "${previousName}" to "${recommendedName}"`,
         })
       }
     }
@@ -866,6 +914,7 @@ export default {
     const acceptRecommendedAddress = (recommendedAddress) => {
       if (props.partnerData?.partnerInfo) {
         const partnerId = props.partnerData.id || props.partnerData.partnerId
+        const previousAddress = originalAddress.value || props.partnerData.partnerInfo.primaryAddress
 
         // Update the store
         validationStore.acceptRecommendation(partnerId, 'address', recommendedAddress)
@@ -881,9 +930,32 @@ export default {
 
         toast({
           title: "Partner Address Updated",
-          description: `Partner address updated to: ${recommendedAddress}`,
+          description: `Address changed from "${previousAddress}" to "${recommendedAddress}"`,
         })
       }
+    }
+
+    // Helper functions for sources
+    const toggleNameSources = () => {
+      showNameSources.value = !showNameSources.value
+    }
+
+    const toggleAddressSources = () => {
+      showAddressSources.value = !showAddressSources.value
+    }
+
+    const formatSourceUrl = (url) => {
+      try {
+        const urlObj = new URL(url.trim())
+        return urlObj.hostname.replace('www.', '')
+      } catch {
+        return url.trim()
+      }
+    }
+
+    const parseSources = (sourcesString) => {
+      if (!sourcesString) return []
+      return sourcesString.split(',').map(source => source.trim()).filter(source => source.length > 0)
     }
 
     return {
@@ -901,7 +973,15 @@ export default {
       acceptRecommendedName,
       acceptRecommendedAddress,
       isNameAccepted,
-      isAddressAccepted
+      isAddressAccepted,
+      showNameSources,
+      showAddressSources,
+      toggleNameSources,
+      toggleAddressSources,
+      formatSourceUrl,
+      parseSources,
+      originalName,
+      originalAddress
     }
   }
 }

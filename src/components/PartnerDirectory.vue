@@ -216,9 +216,14 @@
                       >
                         Accept
                       </Button>
-                      <span v-else-if="isRecommendationAcceptedInModal(agentResult.name)" class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
-                        ✓ Accepted
-                      </span>
+                      <div v-else-if="isRecommendationAcceptedInModal(agentResult.name)" class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
+                        <div class="flex items-center space-x-1">
+                          <span>✓ Accepted</span>
+                        </div>
+                        <div v-if="getOriginalValue(agentResult.name)" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          Changed from: "{{ getOriginalValue(agentResult.name) }}"
+                        </div>
+                      </div>
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
                       <p class="text-sm text-blue-900 dark:text-blue-200 font-medium">
@@ -228,15 +233,27 @@
                   </div>
 
                   <div v-if="agentResult.sources?.length" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg">
-                    <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">📋 Validation Sources</h5>
-                    <div class="flex flex-wrap gap-2">
-                      <a v-for="(source, idx) in agentResult.sources"
-                         :key="idx"
-                         :href="source"
-                         target="_blank"
-                         class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-3 py-1.5 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
-                        Source {{ idx + 1 }}
-                      </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      @click="toggleSources(agentResult.name)"
+                      class="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-0 h-auto justify-start mb-2"
+                    >
+                      <ChevronDown v-if="!showSourcesForAgent[agentResult.name]" class="w-4 h-4 mr-1" />
+                      <ChevronUp v-else class="w-4 h-4 mr-1" />
+                      📋 Validation Sources ({{ agentResult.sources.length }})
+                    </Button>
+                    <div v-if="showSourcesForAgent[agentResult.name]" class="space-y-2 pl-4 border-l-2 border-blue-200 dark:border-blue-700">
+                      <div class="space-y-1">
+                        <a v-for="(source, idx) in agentResult.sources"
+                           :key="idx"
+                           :href="source"
+                           target="_blank"
+                           class="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                          <span class="font-medium mr-2">{{ idx + 1 }}.</span>
+                          <span class="truncate">{{ formatSourceUrl(source) }}</span>
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -383,6 +400,8 @@ export default {
     const statusFilter = ref('all')
     const selectedPartnerForAI = ref(null)
     const selectedPartnerForEdit = ref(null)
+    const showSourcesForAgent = ref({})
+    const originalValues = ref({})
     const editForm = ref({
       companyName: '',
       primaryAddress: '',
@@ -534,6 +553,13 @@ export default {
 
     const viewAIDetails = (partner) => {
       selectedPartnerForAI.value = partner
+
+      // Store original values for comparison
+      const partnerId = partner.partnerId || partner.id
+      originalValues.value[partnerId] = {
+        name: partner.companyName,
+        address: partner.partnerInfo?.primaryAddress
+      }
     }
 
     const closeAIModal = () => {
@@ -626,6 +652,14 @@ export default {
       const partnerId = selectedPartnerForAI.value.partnerId || selectedPartnerForAI.value.id
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
 
+      // Store original value before updating
+      let previousValue = ''
+      if (type === 'name') {
+        previousValue = originalValues.value[partnerId]?.name || selectedPartnerForAI.value.companyName
+      } else if (type === 'address') {
+        previousValue = originalValues.value[partnerId]?.address || selectedPartnerForAI.value.partnerInfo?.primaryAddress
+      }
+
       // Update the store
       validationStore.acceptRecommendation(partnerId, type, recommendedValue)
 
@@ -640,11 +674,34 @@ export default {
       // Show success toast
       toast({
         title: type === 'name' ? "Name Updated" : "Address Updated",
-        description: `Partner ${type} updated to: ${recommendedValue}`,
+        description: `${type === 'name' ? 'Name' : 'Address'} changed from "${previousValue}" to "${recommendedValue}"`,
         variant: "default"
       })
 
       console.log(`Accepted ${type} recommendation in modal:`, recommendedValue)
+    }
+
+    // Helper functions for sources
+    const toggleSources = (agentName) => {
+      showSourcesForAgent.value[agentName] = !showSourcesForAgent.value[agentName]
+    }
+
+    const formatSourceUrl = (url) => {
+      try {
+        const urlObj = new URL(url.trim())
+        return urlObj.hostname.replace('www.', '')
+      } catch {
+        return url.trim()
+      }
+    }
+
+    const getOriginalValue = (agentName) => {
+      if (!selectedPartnerForAI.value) return ''
+
+      const partnerId = selectedPartnerForAI.value.partnerId || selectedPartnerForAI.value.id
+      const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+
+      return originalValues.value[partnerId]?.[type] || ''
     }
 
     // Format address for display
@@ -831,7 +888,11 @@ export default {
       getConfidenceBadgeClass,
       shouldShowAcceptButton,
       isRecommendationAcceptedInModal,
-      acceptRecommendationInModal
+      acceptRecommendationInModal,
+      showSourcesForAgent,
+      toggleSources,
+      formatSourceUrl,
+      getOriginalValue
     }
   }
 }

@@ -3,14 +3,14 @@ import { ref, watch } from 'vue'
 export function useTheme() {
   const isDark = ref(false)
 
-  // Initialize theme from localStorage or system preference
+  // Initialize theme from localStorage or default to light mode
   const initializeTheme = () => {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
       isDark.value = savedTheme === 'dark'
     } else {
-      // Use system preference
-      isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+      // Default to light mode instead of system preference
+      isDark.value = false
     }
     applyTheme()
   }
