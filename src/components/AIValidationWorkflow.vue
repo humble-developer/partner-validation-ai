@@ -33,7 +33,7 @@
 
         <div class="text-center p-4 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg">
           <p class="text-slate-700 dark:text-slate-300">
-            <strong>Validating:</strong> {{ partnerData.companyName }}
+            <strong>{{computedProgress === 100 ? `Validated` : 'Validating' }}:</strong> {{ partnerData.companyName }}
           </p>
         </div>
       </div>
@@ -111,8 +111,9 @@
                       <div class="flex items-center space-x-1">
                         <span>✓ Accepted</span>
                       </div>
-                      <div v-if="originalName" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        Changed from: "{{ originalName }}"
+                      <div v-if="getAcceptedNameValue()" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        AI Recommended name "{{ getAcceptedNameValue() }}" accepted
+                        <span v-if="originalName">(was "{{ originalName }}")</span>
                       </div>
                     </div>
                   </div>
@@ -177,8 +178,9 @@
                       <div class="flex items-center space-x-1">
                         <span>✓ Accepted</span>
                       </div>
-                      <div v-if="originalAddress" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                        Changed from: "{{ originalAddress }}"
+                      <div v-if="getAcceptedAddressValue()" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                        AI Recommended address "{{ getAcceptedAddressValue() }}" accepted
+                        <span v-if="originalAddress">(was "{{ originalAddress }}")</span>
                       </div>
                     </div>
                   </div>
@@ -891,6 +893,7 @@ export default {
         const previousName = originalName.value || props.partnerData.partnerInfo.companyName
 
         // Update the store
+        console.log('AIValidation accepting name for partnerId:', partnerId)
         validationStore.acceptRecommendation(partnerId, 'name', recommendedName)
 
         // Update props data
@@ -905,7 +908,7 @@ export default {
 
         toast({
           title: "Partner Name Updated",
-          description: `Name changed from "${previousName}" to "${recommendedName}"`,
+          description: `AI Recommended name "${recommendedName}" accepted (was "${previousName}")`,
         })
       }
     }
@@ -917,6 +920,7 @@ export default {
         const previousAddress = originalAddress.value || props.partnerData.partnerInfo.primaryAddress
 
         // Update the store
+        console.log('AIValidation accepting address for partnerId:', partnerId)
         validationStore.acceptRecommendation(partnerId, 'address', recommendedAddress)
 
         // Update props data
@@ -930,7 +934,7 @@ export default {
 
         toast({
           title: "Partner Address Updated",
-          description: `Address changed from "${previousAddress}" to "${recommendedAddress}"`,
+          description: `AI Recommended address "${recommendedAddress}" accepted (was "${previousAddress}")`,
         })
       }
     }
@@ -958,6 +962,22 @@ export default {
       return sourcesString.split(',').map(source => source.trim()).filter(source => source.length > 0)
     }
 
+    const getAcceptedNameValue = () => {
+      if (!props.partnerData) return ''
+      const partnerId = props.partnerData.id || props.partnerData.partnerId
+      const accepted = validationStore.getAcceptedRecommendation(partnerId, 'name')
+      // Extract value if it's an object, otherwise return as is
+      return accepted?.value || accepted || ''
+    }
+
+    const getAcceptedAddressValue = () => {
+      if (!props.partnerData) return ''
+      const partnerId = props.partnerData.id || props.partnerData.partnerId
+      const accepted = validationStore.getAcceptedRecommendation(partnerId, 'address')
+      // Extract value if it's an object, otherwise return as is
+      return accepted?.value || accepted || ''
+    }
+
     return {
       currentStep,
       progress,
@@ -981,7 +1001,9 @@ export default {
       formatSourceUrl,
       parseSources,
       originalName,
-      originalAddress
+      originalAddress,
+      getAcceptedNameValue,
+      getAcceptedAddressValue
     }
   }
 }

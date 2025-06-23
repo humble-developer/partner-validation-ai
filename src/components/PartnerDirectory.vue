@@ -220,8 +220,9 @@
                         <div class="flex items-center space-x-1">
                           <span>✓ Accepted</span>
                         </div>
-                        <div v-if="getOriginalValue(agentResult.name)" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          Changed from: "{{ getOriginalValue(agentResult.name) }}"
+                        <div v-if="getAcceptedValue(agentResult.name) && (agentResult.name === 'Partner Name Validator' || agentResult.name === 'Address Validator')" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                          AI Recommended {{ agentResult.name === 'Partner Name Validator' ? 'name' : 'address' }} "{{ getAcceptedValue(agentResult.name) }}" accepted
+                          <span v-if="getOriginalValue(agentResult.name)">(was "{{ getOriginalValue(agentResult.name) }}")</span>
                         </div>
                       </div>
                     </div>
@@ -368,7 +369,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Card from '@/components/ui/card.vue'
 import Badge from '@/components/ui/badge.vue'
 
@@ -402,6 +403,7 @@ export default {
     const selectedPartnerForEdit = ref(null)
     const showSourcesForAgent = ref({})
     const originalValues = ref({})
+    const refreshTrigger = ref(0) // Force reactivity trigger
     const editForm = ref({
       companyName: '',
       primaryAddress: '',
@@ -555,11 +557,16 @@ export default {
       selectedPartnerForAI.value = partner
 
       // Store original values for comparison
-      const partnerId = partner.partnerId || partner.id
+      const partnerId = partner.id || partner.partnerId
       originalValues.value[partnerId] = {
         name: partner.companyName,
         address: partner.partnerInfo?.primaryAddress
       }
+
+      // Force refresh of acceptance status
+      refreshTrigger.value++
+
+      console.log('PartnerDirectory viewing AI details for partner:', partnerId, partner.companyName)
     }
 
     const closeAIModal = () => {
@@ -637,19 +644,44 @@ export default {
       return agentName === 'Partner Name Validator' || agentName === 'Address Validator'
     }
 
+    // Create a reactive computed property for acceptance status
+    const acceptanceStatus = computed(() => {
+      // Include refresh trigger to force reactivity
+      refreshTrigger.value
+
+      if (!selectedPartnerForAI.value) return {}
+
+      const partnerId = selectedPartnerForAI.value.id || selectedPartnerForAI.value.partnerId
+      console.log('PartnerDirectory computing acceptance status for partnerId:', partnerId, 'trigger:', refreshTrigger.value)
+
+      // Force reactivity by accessing the store's reactive state
+      const nameAccepted = validationStore.isRecommendationAccepted(partnerId, 'name')
+      const addressAccepted = validationStore.isRecommendationAccepted(partnerId, 'address')
+
+      console.log('Computed acceptance status:', { name: nameAccepted, address: addressAccepted })
+
+      return {
+        name: nameAccepted,
+        address: addressAccepted
+      }
+    })
+
     const isRecommendationAcceptedInModal = (agentName) => {
-      if (!selectedPartnerForAI.value) return false
+      // Only check acceptance for Name and Address validators
+      if (agentName !== 'Partner Name Validator' && agentName !== 'Address Validator') {
+        return false
+      }
 
-      const partnerId = selectedPartnerForAI.value.partnerId || selectedPartnerForAI.value.id
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
-
-      return validationStore.isRecommendationAccepted(partnerId, type)
+      const isAccepted = acceptanceStatus.value[type] || false
+      console.log('PartnerDirectory checking acceptance for agent:', agentName, 'type:', type, 'isAccepted:', isAccepted)
+      return isAccepted
     }
 
     const acceptRecommendationInModal = (agentName, recommendedValue) => {
       if (!selectedPartnerForAI.value) return
 
-      const partnerId = selectedPartnerForAI.value.partnerId || selectedPartnerForAI.value.id
+      const partnerId = selectedPartnerForAI.value.id || selectedPartnerForAI.value.partnerId
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
 
       // Store original value before updating
@@ -661,6 +693,7 @@ export default {
       }
 
       // Update the store
+      console.log('PartnerDirectory accepting for partnerId:', partnerId, 'type:', type)
       validationStore.acceptRecommendation(partnerId, type, recommendedValue)
 
       // Update the selected partner data
@@ -674,7 +707,7 @@ export default {
       // Show success toast
       toast({
         title: type === 'name' ? "Name Updated" : "Address Updated",
-        description: `${type === 'name' ? 'Name' : 'Address'} changed from "${previousValue}" to "${recommendedValue}"`,
+        description: `AI Recommended ${type} "${recommendedValue}" accepted (was "${previousValue}")`,
         variant: "default"
       })
 
@@ -698,23 +731,56 @@ export default {
     const getOriginalValue = (agentName) => {
       if (!selectedPartnerForAI.value) return ''
 
-      const partnerId = selectedPartnerForAI.value.partnerId || selectedPartnerForAI.value.id
+      // Only return values for Name and Address validators
+      if (agentName !== 'Partner Name Validator' && agentName !== 'Address Validator') {
+        return ''
+      }
+
+      const partnerId = selectedPartnerForAI.value.id || selectedPartnerForAI.value.partnerId
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
 
       return originalValues.value[partnerId]?.[type] || ''
     }
 
+    const getAcceptedValue = (agentName) => {
+      if (!selectedPartnerForAI.value) return ''
+
+      // Only return values for Name and Address validators
+      if (agentName !== 'Partner Name Validator' && agentName !== 'Address Validator') {
+        return ''
+      }
+
+      const partnerId = selectedPartnerForAI.value.id || selectedPartnerForAI.value.partnerId
+      const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+
+      const accepted = validationStore.getAcceptedRecommendation(partnerId, type)
+      // Extract value if it's an object, otherwise return as is
+      return accepted?.value || accepted || ''
+    }
+
+    // Watch for changes in the validation store to ensure reactivity
+    watch(() => validationStore.validationResults, () => {
+      // Force reactivity update when store changes
+      console.log('PartnerDirectory detected store changes')
+    }, { deep: true })
+
     // Format address for display
     const formatAddress = (partnerInfo) => {
       if (!partnerInfo) return 'Address not available'
-      
+
+      // Check for primaryAddress first
+      if (partnerInfo.primaryAddress) {
+        return partnerInfo.primaryAddress
+      }
+
+      // Fallback to individual address components
       const parts = []
       if (partnerInfo.street) parts.push(partnerInfo.street)
       if (partnerInfo.city) parts.push(partnerInfo.city)
       if (partnerInfo.state) parts.push(partnerInfo.state)
       if (partnerInfo.zipCode) parts.push(partnerInfo.zipCode)
       if (partnerInfo.country) parts.push(partnerInfo.country)
-      
+
       return parts.length > 0 ? parts.join(', ') : 'Address not available'
     }
 
@@ -861,9 +927,11 @@ export default {
       selectedPartnerForAI,
       selectedPartnerForEdit,
       editForm,
+      refreshTrigger,
 
       // Computed
       filteredPartners,
+      acceptanceStatus,
 
       // Functions
       exportPartners,
@@ -892,7 +960,8 @@ export default {
       showSourcesForAgent,
       toggleSources,
       formatSourceUrl,
-      getOriginalValue
+      getOriginalValue,
+      getAcceptedValue
     }
   }
 }

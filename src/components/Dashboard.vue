@@ -665,8 +665,8 @@ export default {
 
     // Helper functions for validation status display
     const getValidationStatusText = (status) => {
-      // Show "Currently processing" during animation, then show final status
-      if (activePartnerRequest.value && !animationCompleted.value) {
+      // Show "Currently processing" only during initial animation, then show final status
+      if (activePartnerRequest.value && !animationCompleted.value && status === 'pending_review') {
         return 'Currently processing'
       }
 
@@ -674,9 +674,9 @@ export default {
         case 'approved':
           return 'Validation complete'
         case 'pending_review':
-          return 'Awaiting human review'
+          return 'Validation complete - Awaiting human review'
         case 'rejected':
-          return 'Validation rejected'
+          return 'Validation complete - Rejected'
         default:
           return 'Processing'
       }

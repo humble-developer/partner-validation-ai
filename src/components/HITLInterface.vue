@@ -96,59 +96,98 @@
 
             <div class="flex-1 overflow-y-auto pr-2 min-h-0">
               <div v-if="selectedItem" class="space-y-4 p-4">
+                <!-- Partner Information Card -->
                 <Card class="p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-lg rounded-2xl">
-                <div class="space-y-4">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                      <div class="w-8 h-8 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center shadow-lg">
-                        <Brain class="w-4 h-4" />
+                  <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center shadow-lg">
+                          <Building class="w-4 h-4" />
+                        </div>
+                        <h4 class="text-lg font-bold text-gray-900 dark:text-white">
+                          {{ selectedItem.company }}
+                        </h4>
                       </div>
-                      <h4 class="text-lg font-bold text-gray-900 dark:text-white">
-                        Analysis for {{ selectedItem.company }}
-                      </h4>
+                      <Badge :class="`border-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm font-bold text-sm ${getConfidenceColor(selectedItem.confidence)}`">
+                        {{ selectedItem.confidence }}% Confidence
+                      </Badge>
                     </div>
-                    <Badge :class="`border-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm font-bold text-sm ${getConfidenceColor(selectedItem.confidence)}`">
-                      {{ selectedItem.confidence }}% Confidence
-                    </Badge>
+
+                    <!-- Partner Details -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div class="space-y-2">
+                        <h5 class="font-bold text-gray-900 dark:text-white text-sm">Company Name</h5>
+                        <p class="text-gray-700 dark:text-gray-300 font-medium bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50 p-3 rounded-lg text-sm">
+                          {{ selectedItem.partnerInfo?.companyName || selectedItem.company }}
+                        </p>
+                      </div>
+
+                      <div class="space-y-2">
+                        <h5 class="font-bold text-gray-900 dark:text-white text-sm">Business Type</h5>
+                        <p class="text-gray-700 dark:text-gray-300 font-medium bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50 p-3 rounded-lg text-sm">
+                          {{ selectedItem.partnerInfo?.businessType || 'Not specified' }}
+                        </p>
+                      </div>
+
+                      <div class="space-y-2 md:col-span-2">
+                        <h5 class="font-bold text-gray-900 dark:text-white text-sm">Primary Address</h5>
+                        <p class="text-gray-700 dark:text-gray-300 font-medium bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50 p-3 rounded-lg text-sm">
+                          {{ selectedItem.partnerInfo?.primaryAddress || 'Not provided' }}
+                        </p>
+                      </div>
+                    </div>
                   </div>
+                </Card>
 
-                  <div class="grid grid-cols-1 gap-4">
-                    <div class="space-y-2">
-                      <h5 class="font-bold text-gray-900 dark:text-white text-sm">Issue</h5>
-                      <p class="text-gray-700 dark:text-gray-300 font-medium bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50 p-3 rounded-lg text-sm">
-                        {{ selectedItem.details.issue }}
-                      </p>
+                <!-- AI Validation Results -->
+                <div v-if="getAgentResults(selectedItem)" class="space-y-4">
+                  <div v-for="agentResult in getAgentResults(selectedItem)"
+                       :key="agentResult.name"
+                       class="bg-gray-50 dark:bg-slate-700 p-6 rounded-xl border border-gray-200 dark:border-slate-600">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 class="text-lg font-semibold text-gray-900 dark:text-white">{{ agentResult.name }}</h4>
+                      <Badge :class="getConfidenceBadgeClass(agentResult.confidence)" class="text-sm px-3 py-1">
+                        {{ agentResult.confidence }}% Confidence
+                      </Badge>
                     </div>
 
-                    <div class="space-y-2">
-                      <h5 class="font-bold text-gray-900 dark:text-white text-sm">AI Analysis</h5>
-                      <p class="text-gray-700 dark:text-gray-300 font-medium bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-sm border border-blue-200/50 dark:border-blue-700/50 p-3 rounded-lg text-sm">
-                        {{ selectedItem.details.aiAnalysis }}
-                      </p>
-                    </div>
-
-                    <div class="space-y-2">
-                      <h5 class="font-bold text-gray-900 dark:text-white text-sm">Sources</h5>
-                      <div class="flex flex-wrap gap-2">
-                        <Badge
-                          v-for="(source, index) in selectedItem.details.sources"
-                          :key="index"
-                          class="bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-700 hover:bg-blue-200 dark:hover:bg-blue-900/30 hover:text-blue-800 dark:hover:text-blue-300 font-semibold text-xs"
-                        >
-                          {{ source }}
-                        </Badge>
+                    <div class="space-y-4">
+                      <div>
+                        <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Analysis</h5>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-200 dark:border-slate-600">
+                          {{ agentResult.reasoning }}
+                        </p>
                       </div>
-                    </div>
 
-                    <div class="space-y-2">
-                      <h5 class="font-bold text-gray-900 dark:text-white text-sm">Recommendation</h5>
-                      <p class="text-gray-700 dark:text-gray-300 font-medium bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50 p-3 rounded-lg text-sm">
-                        {{ selectedItem.details.recommendation }}
-                      </p>
+                      <!-- AI Recommendations -->
+                      <div v-if="agentResult.recommended_value" class="border-l-4 border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-r-lg">
+                        <div class="flex items-center justify-between mb-2">
+                          <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">💡 AI Recommendation</h5>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                          <p class="text-sm text-blue-900 dark:text-blue-200 font-medium">
+                            {{ agentResult.recommended_value }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Sources -->
+                      <div v-if="agentResult.sources?.length" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg">
+                        <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">📋 Validation Sources</h5>
+                        <div class="space-y-1">
+                          <a v-for="(source, idx) in agentResult.sources"
+                             :key="idx"
+                             :href="source"
+                             target="_blank"
+                             class="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                            <span class="font-medium mr-2">{{ idx + 1 }}.</span>
+                            <span class="truncate">{{ formatSourceUrl(source) }}</span>
+                          </a>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </Card>
 
               <Card class="p-6 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-lg rounded-2xl">
                 <div class="space-y-4">
@@ -181,14 +220,14 @@
                       <X class="w-4 h-4 mr-2" />
                       Reject
                     </Button>
-
+<!-- 
                     <Button
                       @click="handleRequestMoreInfo(selectedItem)"
                       class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl transform hover:scale-105 text-sm"
                     >
                       <Brain class="w-4 h-4 mr-2" />
                       Request Analysis
-                    </Button>
+                    </Button> -->
                   </div>
                 </div>
               </Card>
@@ -373,6 +412,74 @@ export default {
       return "bg-gradient-to-r from-slate-600 to-slate-700"
     }
 
+    // Helper functions for agent results
+    const getAgentResults = (selectedItem) => {
+      if (!selectedItem) return []
+
+      // Get the full validation data
+      const validation = validationStore.getValidationById(selectedItem.validationId)
+      if (!validation?.rawApiResponse?.validation_results) return []
+
+      const validationResults = validation.rawApiResponse.validation_results
+      const results = []
+
+      // Partner Name Validator
+      if (validationResults.partner_name) {
+        const nameData = validationResults.partner_name
+        results.push({
+          name: 'Partner Name Validator',
+          confidence: Math.round((nameData.confidence_score || 0) * 100),
+          reasoning: nameData.reasoning || 'Name validation completed',
+          recommended_value: nameData.recommended_partner_name,
+          sources: nameData.sources ? nameData.sources.split(', ') : []
+        })
+      }
+
+      // Address Validator
+      if (validationResults.partner_address) {
+        const addressData = validationResults.partner_address
+        results.push({
+          name: 'Address Validator',
+          confidence: Math.round((addressData.confidence_score || 0) * 100),
+          reasoning: addressData.reasoning || 'Address validation completed',
+          recommended_value: addressData.recommended_address,
+          sources: addressData.sources ? addressData.sources.split(', ') : []
+        })
+      }
+
+      // Subsidiary Discovery Agent
+      if (validationResults.partner_subsidiaries) {
+        const subsidiaryData = validationResults.partner_subsidiaries
+        results.push({
+          name: 'Subsidiary Discovery Agent',
+          confidence: Math.round((subsidiaryData.confidence_score || 0) * 100),
+          reasoning: subsidiaryData.reasoning || 'Subsidiary discovery completed',
+          recommended_value: subsidiaryData.subsidiaries?.length ?
+            `Found ${subsidiaryData.subsidiaries.length} subsidiaries` : null,
+          sources: []
+        })
+      }
+
+      return results
+    }
+
+    const getConfidenceBadgeClass = (confidence) => {
+      if (confidence >= 90) return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700'
+      if (confidence >= 80) return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-700'
+      if (confidence >= 70) return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-700'
+      if (confidence >= 60) return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-700'
+      return 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700'
+    }
+
+    const formatSourceUrl = (url) => {
+      try {
+        const urlObj = new URL(url.trim())
+        return urlObj.hostname.replace('www.', '')
+      } catch {
+        return url.trim()
+      }
+    }
+
     return {
       selectedItem,
       feedback,
@@ -383,7 +490,10 @@ export default {
       getPriorityColor,
       getPriorityGradient,
       getConfidenceColor,
-      getConfidenceGradient
+      getConfidenceGradient,
+      getAgentResults,
+      getConfidenceBadgeClass,
+      formatSourceUrl
     }
   }
 }
