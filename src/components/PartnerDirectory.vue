@@ -739,6 +739,12 @@ export default {
       const partnerId = selectedPartnerForAI.value.id || selectedPartnerForAI.value.partnerId
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
 
+      // Get original value from store (preferred) or fallback to local storage
+      const storeOriginal = validationStore.getOriginalValue(partnerId, type)
+      if (storeOriginal) {
+        return storeOriginal
+      }
+
       return originalValues.value[partnerId]?.[type] || ''
     }
 

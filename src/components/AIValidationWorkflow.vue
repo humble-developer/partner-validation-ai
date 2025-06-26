@@ -96,8 +96,10 @@
               <div v-if="agent.name === 'Partner Name Validator' && getAgentEnhancedData(agent).recommended_partner_name"
                    class="bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-blue-500 dark:border-blue-400 p-4 rounded-r-lg">
                 <div class="space-y-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">💡 AI Recommendation</h5>
+                  </div>
                   <div class="flex items-center justify-between">
-                    <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">💡 Recommended Name</h5>
                     <Button
                       v-if="!isNameAccepted"
                       size="sm"
@@ -113,7 +115,7 @@
                       </div>
                       <div v-if="getAcceptedNameValue()" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
                         AI Recommended name "{{ getAcceptedNameValue() }}" accepted
-                        <span v-if="originalName">(was "{{ originalName }}")</span>
+                        <span v-if="getOriginalNameValue()">(was "{{ getOriginalNameValue() }}")</span>
                       </div>
                     </div>
                   </div>
@@ -161,16 +163,18 @@
 
               <!-- Address Validator Details -->
               <div v-if="agent.name === 'Address Validator' && getAgentEnhancedData(agent).recommended_address"
-                   class="bg-green-50/50 dark:bg-green-900/10 border-l-4 border-green-500 dark:border-green-400 p-4 rounded-r-lg">
+                   class="bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-blue-500 dark:border-blue-400 p-4 rounded-r-lg">
                 <div class="space-y-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">💡 AI Recommendation</h5>
+                  </div>
                   <div class="flex items-center justify-between">
-                    <h5 class="text-sm font-semibold text-green-900 dark:text-green-200">📍 Recommended Address</h5>
                     <Button
                       v-if="!isAddressAccepted"
                       size="sm"
                       variant="outline"
                       @click="acceptRecommendedAddress(getAgentEnhancedData(agent).recommended_address)"
-                      class="text-xs px-3 py-1.5 h-auto bg-green-600 text-white border-green-600 hover:bg-green-700 transition-colors duration-200"
+                      class="text-xs px-3 py-1.5 h-auto bg-blue-600 text-white border-blue-600 hover:bg-blue-700 transition-colors duration-200"
                     >
                       Accept
                     </Button>
@@ -180,12 +184,12 @@
                       </div>
                       <div v-if="getAcceptedAddressValue()" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
                         AI Recommended address "{{ getAcceptedAddressValue() }}" accepted
-                        <span v-if="originalAddress">(was "{{ originalAddress }}")</span>
+                        <span v-if="getOriginalAddressValue()">(was "{{ getOriginalAddressValue() }}")</span>
                       </div>
                     </div>
                   </div>
-                  <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-green-200 dark:border-green-700">
-                    <p class="text-sm text-green-900 dark:text-green-200 font-medium">
+                  <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                    <p class="text-sm text-blue-900 dark:text-blue-200 font-medium">
                       {{ getAgentEnhancedData(agent).recommended_address }}
                     </p>
                   </div>
@@ -194,19 +198,19 @@
                       variant="ghost"
                       size="sm"
                       @click="toggleAddressSources"
-                      class="text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 p-0 h-auto justify-start"
+                      class="text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-0 h-auto justify-start"
                     >
                       <ChevronDown v-if="!showAddressSources" class="w-3 h-3 mr-1" />
                       <ChevronUp v-else class="w-3 h-3 mr-1" />
                       📋 Sources ({{ parseSources(getAgentEnhancedData(agent).sources).length }})
                     </Button>
-                    <div v-if="showAddressSources" class="space-y-2 pl-4 border-l-2 border-green-200 dark:border-green-700">
+                    <div v-if="showAddressSources" class="space-y-2 pl-4 border-l-2 border-blue-200 dark:border-blue-700">
                       <div class="space-y-1">
                         <a v-for="(source, idx) in parseSources(getAgentEnhancedData(agent).sources)"
                            :key="idx"
                            :href="source"
                            target="_blank"
-                           class="flex items-center text-xs text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-500 transition-colors duration-200">
+                           class="flex items-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
                           <span class="font-medium mr-2">{{ idx + 1 }}.</span>
                           <span class="truncate">{{ formatSourceUrl(source) }}</span>
                         </a>
@@ -218,11 +222,11 @@
 
               <!-- Subsidiary Discovery Details -->
               <div v-if="agent.name === 'Subsidiary Discovery Agent' && getAgentEnhancedData(agent).subsidiaries?.length"
-                   class="bg-purple-50/50 dark:bg-purple-900/10 border-l-4 border-purple-500 dark:border-purple-400 p-4 rounded-r-lg">
+                   class="bg-blue-50/50 dark:bg-blue-900/10 border-l-4 border-blue-500 dark:border-blue-400 p-4 rounded-r-lg">
                 <div class="space-y-3">
                   <div class="flex items-center justify-between">
-                    <h5 class="text-sm font-semibold text-purple-900 dark:text-purple-200">🏢 Discovered Subsidiaries</h5>
-                    <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs px-2 py-1 rounded-full font-medium border border-purple-200 dark:border-purple-600">
+                    <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">🏢 Discovered Subsidiaries</h5>
+                    <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded-full font-medium border border-blue-200 dark:border-blue-600">
                       {{ getAgentEnhancedData(agent).subsidiaries.length }} Found
                     </span>
                   </div>
@@ -978,6 +982,22 @@ export default {
       return accepted?.value || accepted || ''
     }
 
+    const getOriginalNameValue = () => {
+      if (!props.partnerData) return ''
+      const partnerId = props.partnerData.id || props.partnerData.partnerId
+      // Get original value from store (preferred) or fallback to local ref
+      const storeOriginal = validationStore.getOriginalValue(partnerId, 'name')
+      return storeOriginal || originalName.value || ''
+    }
+
+    const getOriginalAddressValue = () => {
+      if (!props.partnerData) return ''
+      const partnerId = props.partnerData.id || props.partnerData.partnerId
+      // Get original value from store (preferred) or fallback to local ref
+      const storeOriginal = validationStore.getOriginalValue(partnerId, 'address')
+      return storeOriginal || originalAddress.value || ''
+    }
+
     return {
       currentStep,
       progress,
@@ -1003,7 +1023,9 @@ export default {
       originalName,
       originalAddress,
       getAcceptedNameValue,
-      getAcceptedAddressValue
+      getAcceptedAddressValue,
+      getOriginalNameValue,
+      getOriginalAddressValue
     }
   }
 }

@@ -219,13 +219,34 @@ export const useValidationStore = defineStore('validation', () => {
     }
 
     const partnerAccepted = acceptedRecommendations.value.get(partnerId)
-    partnerAccepted[type] = {
-      value,
-      acceptedAt: new Date().toISOString()
+
+    // Store original value before updating (only if not already stored)
+    const partner = validationResults.value.find(p => p.partnerId === partnerId || p.id === partnerId)
+    if (partner && !partnerAccepted[type]) {
+      // Store original value for comparison
+      let originalValue = ''
+      if (type === 'name') {
+        originalValue = partner.companyName || partner.partnerInfo?.companyName || ''
+      } else if (type === 'address') {
+        originalValue = partner.partnerInfo?.primaryAddress || ''
+      }
+
+      partnerAccepted[type] = {
+        value,
+        originalValue,
+        acceptedAt: new Date().toISOString()
+      }
+    } else {
+      // Update existing acceptance (preserve original value)
+      const existingOriginal = partnerAccepted[type]?.originalValue || ''
+      partnerAccepted[type] = {
+        value,
+        originalValue: existingOriginal,
+        acceptedAt: new Date().toISOString()
+      }
     }
 
     // Update the partner data in validationResults
-    const partner = validationResults.value.find(p => p.partnerId === partnerId || p.id === partnerId)
     if (partner) {
       if (type === 'name') {
         partner.companyName = value
@@ -246,6 +267,11 @@ export const useValidationStore = defineStore('validation', () => {
   const getAcceptedRecommendation = (partnerId, type) => {
     const partnerAccepted = acceptedRecommendations.value.get(partnerId)
     return partnerAccepted ? partnerAccepted[type] : null
+  }
+
+  const getOriginalValue = (partnerId, type) => {
+    const partnerAccepted = acceptedRecommendations.value.get(partnerId)
+    return partnerAccepted && partnerAccepted[type] ? partnerAccepted[type].originalValue : ''
   }
 
   const clearAcceptedRecommendations = (partnerId) => {
@@ -360,6 +386,7 @@ export const useValidationStore = defineStore('validation', () => {
     acceptRecommendation,
     isRecommendationAccepted,
     getAcceptedRecommendation,
+    getOriginalValue,
     clearAcceptedRecommendations
   }
 })
