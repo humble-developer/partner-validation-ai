@@ -283,7 +283,7 @@ export default {
         // Success - emit the form data along with mapped API response
         toast({
           title: "Registration Submitted",
-          description: "AI validation workflow has been initiated.",
+          description: "Partner registration received. Starting AI validation workflow...",
         })
 
         // Emit both form data and mapped API response

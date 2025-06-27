@@ -93,13 +93,8 @@ export const useValidationStore = defineStore('validation', () => {
 
     validationResults.value.unshift(validationResult)
 
-    // Send notification for validation completion
-    console.log('Sending validation complete notification for:', partnerData.companyName)
-    notifyValidationComplete(
-      partnerData.companyName,
-      aiResults.overallConfidence,
-      needsHumanReview
-    )
+    // Don't send immediate notification - let Dashboard handle timing after animation
+    console.log('Validation result added to store for:', partnerData.companyName)
 
     return validationResult
   }

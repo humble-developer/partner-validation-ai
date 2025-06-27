@@ -163,6 +163,24 @@
                       <div v-if="agentResult.recommended_value" class="border-l-4 border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-r-lg">
                         <div class="flex items-center justify-between mb-2">
                           <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">💡 AI Recommendation</h5>
+                          <Button
+                            v-if="shouldShowAcceptButton(agentResult.name) && !isRecommendationAccepted(agentResult.name)"
+                            size="sm"
+                            variant="outline"
+                            @click="acceptRecommendation(agentResult.name, agentResult.recommended_value)"
+                            class="text-xs px-3 py-1.5 h-auto bg-blue-600 text-white border-blue-600 hover:bg-blue-700 transition-colors duration-200"
+                          >
+                            Accept
+                          </Button>
+                          <div v-else-if="isRecommendationAccepted(agentResult.name)" class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
+                            <div class="flex items-center space-x-1">
+                              <span>✓ Accepted</span>
+                            </div>
+                            <div v-if="getAcceptedValue(agentResult.name) && (agentResult.name === 'Partner Name Validator' || agentResult.name === 'Address Validator')" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              AI Recommended {{ agentResult.name === 'Partner Name Validator' ? 'name' : 'address' }} "{{ getAcceptedValue(agentResult.name) }}" accepted
+                              <span v-if="getOriginalValue(agentResult.name)">(was "{{ getOriginalValue(agentResult.name) }}")</span>
+                            </div>
+                          </div>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
                           <p class="text-sm text-blue-900 dark:text-blue-200 font-medium">
@@ -171,8 +189,43 @@
                         </div>
                       </div>
 
+                      <!-- Subsidiaries Display (for Subsidiary Discovery Agent) -->
+                      <div v-if="agentResult.name === 'Subsidiary Discovery Agent' && agentResult.subsidiaries?.length" class="border-l-4 border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-r-lg">
+                        <div class="flex items-center justify-between mb-3">
+                          <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">🏢 Discovered Subsidiaries</h5>
+                          <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded-full font-medium border border-blue-200 dark:border-blue-600">
+                            {{ agentResult.subsidiaries.length }} Found
+                          </span>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                          <div class="space-y-2">
+                            <div v-for="subsidiary in agentResult.subsidiaries"
+                                 :key="subsidiary.name"
+                                 class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                              <p class="text-sm font-medium text-gray-900 dark:text-white">{{ subsidiary.name }}</p>
+                              <p v-if="subsidiary.address" class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ subsidiary.address }}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Subsidiary Sources -->
+                      <div v-if="agentResult.name === 'Subsidiary Discovery Agent' && agentResult.sources?.length" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg">
+                        <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">📋 Discovery Sources</h5>
+                        <div class="space-y-1">
+                          <a v-for="(source, idx) in agentResult.sources"
+                             :key="idx"
+                             :href="source"
+                             target="_blank"
+                             class="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                            <span class="font-medium mr-2">{{ idx + 1 }}.</span>
+                            <span class="truncate">{{ formatSourceUrl(source) }}</span>
+                          </a>
+                        </div>
+                      </div>
+
                       <!-- Sources -->
-                      <div v-if="agentResult.sources?.length" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg">
+                      <div v-if="agentResult.sources?.length && agentResult.name !== 'Subsidiary Discovery Agent'" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg">
                         <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">📋 Validation Sources</h5>
                         <div class="space-y-1">
                           <a v-for="(source, idx) in agentResult.sources"
@@ -456,7 +509,8 @@ export default {
           reasoning: subsidiaryData.reasoning || 'Subsidiary discovery completed',
           recommended_value: subsidiaryData.subsidiaries?.length ?
             `Found ${subsidiaryData.subsidiaries.length} subsidiaries` : null,
-          sources: []
+          sources: subsidiaryData.sources ? subsidiaryData.sources.split(', ') : [],
+          subsidiaries: subsidiaryData.subsidiaries || []
         })
       }
 
@@ -480,6 +534,144 @@ export default {
       }
     }
 
+    // Accept button logic
+    const shouldShowAcceptButton = (agentName) => {
+      if (!selectedItem.value) return false
+
+      // Only show for name and address validators
+      return agentName === 'Partner Name Validator' || agentName === 'Address Validator'
+    }
+
+    const isRecommendationAccepted = (agentName) => {
+      if (!selectedItem.value) return false
+
+      // Only check acceptance for Name and Address validators
+      if (agentName !== 'Partner Name Validator' && agentName !== 'Address Validator') {
+        return false
+      }
+
+      const partnerId = selectedItem.value.validationId
+      const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+
+      return validationStore.isRecommendationAccepted(partnerId, type)
+    }
+
+    const acceptRecommendation = (agentName, recommendedValue) => {
+      if (!selectedItem.value) return
+
+      const partnerId = selectedItem.value.validationId
+      const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+
+      // Store original value before updating
+      let previousValue = ''
+      if (type === 'name') {
+        previousValue = selectedItem.value.partnerInfo?.companyName || selectedItem.value.company
+      } else if (type === 'address') {
+        previousValue = selectedItem.value.partnerInfo?.primaryAddress || ''
+      }
+
+      // Update the store
+      validationStore.acceptRecommendation(partnerId, type, recommendedValue)
+
+      // Update the selected item data
+      if (type === 'name') {
+        selectedItem.value.company = recommendedValue
+        if (selectedItem.value.partnerInfo) {
+          selectedItem.value.partnerInfo.companyName = recommendedValue
+        }
+      } else if (type === 'address') {
+        if (selectedItem.value.partnerInfo) {
+          selectedItem.value.partnerInfo.primaryAddress = recommendedValue
+        }
+      }
+
+      // Show success toast
+      toast({
+        title: type === 'name' ? "Name Updated" : "Address Updated",
+        description: `AI Recommended ${type} "${recommendedValue}" accepted (was "${previousValue}")`,
+        variant: "default"
+      })
+
+      console.log(`Accepted ${type} recommendation in review queue:`, recommendedValue)
+    }
+
+    const getAcceptedValue = (agentName) => {
+      if (!selectedItem.value) return ''
+
+      // Only return values for Name and Address validators
+      if (agentName !== 'Partner Name Validator' && agentName !== 'Address Validator') {
+        return ''
+      }
+
+      const partnerId = selectedItem.value.validationId
+      const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+
+      const accepted = validationStore.getAcceptedRecommendation(partnerId, type)
+      // Extract value if it's an object, otherwise return as is
+      return accepted?.value || accepted || ''
+    }
+
+    const getOriginalValue = (agentName) => {
+      if (!selectedItem.value) return ''
+
+      // Only return values for Name and Address validators
+      if (agentName !== 'Partner Name Validator' && agentName !== 'Address Validator') {
+        return ''
+      }
+
+      const partnerId = selectedItem.value.validationId
+      const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+
+      // Get original value from store (preferred)
+      const storeOriginal = validationStore.getOriginalValue(partnerId, type)
+      if (storeOriginal) {
+        return storeOriginal
+      }
+
+      // Fallback to current item data
+      if (type === 'name') {
+        return selectedItem.value.partnerInfo?.companyName || selectedItem.value.company
+      } else if (type === 'address') {
+        return selectedItem.value.partnerInfo?.primaryAddress || ''
+      }
+
+      return ''
+    }
+
+    // Get subsidiaries for the selected item
+    const getSubsidiaries = (item) => {
+      if (!item) return []
+
+      console.log('HITLInterface getSubsidiaries called with item:', item)
+
+      // Check raw API response first
+      if (item.rawApiResponse?.validation_results?.partner_subsidiaries?.subsidiaries) {
+        console.log('Found subsidiaries in rawApiResponse:', item.rawApiResponse.validation_results.partner_subsidiaries.subsidiaries)
+        return item.rawApiResponse.validation_results.partner_subsidiaries.subsidiaries
+      }
+
+      // Check aiValidation data
+      if (item.aiValidation?.subsidiaries) {
+        console.log('Found subsidiaries in aiValidation:', item.aiValidation.subsidiaries)
+        return item.aiValidation.subsidiaries
+      }
+
+      // Check partnerInfo
+      if (item.partnerInfo?.subsidiaries) {
+        console.log('Found subsidiaries in partnerInfo:', item.partnerInfo.subsidiaries)
+        return item.partnerInfo.subsidiaries
+      }
+
+      // Check if subsidiaries are in the main item object
+      if (item.subsidiaries) {
+        console.log('Found subsidiaries in main item:', item.subsidiaries)
+        return item.subsidiaries
+      }
+
+      console.log('No subsidiaries found in any location')
+      return []
+    }
+
     return {
       selectedItem,
       feedback,
@@ -493,7 +685,13 @@ export default {
       getConfidenceGradient,
       getAgentResults,
       getConfidenceBadgeClass,
-      formatSourceUrl
+      formatSourceUrl,
+      shouldShowAcceptButton,
+      isRecommendationAccepted,
+      acceptRecommendation,
+      getAcceptedValue,
+      getOriginalValue,
+      getSubsidiaries
     }
   }
 }

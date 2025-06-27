@@ -230,13 +230,39 @@
                       {{ getAgentEnhancedData(agent).subsidiaries.length }} Found
                     </span>
                   </div>
-                  <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
+                  <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
                     <div class="space-y-2">
                       <div v-for="subsidiary in getAgentEnhancedData(agent).subsidiaries"
                            :key="subsidiary.name"
-                           class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-500 transition-colors duration-200">
+                           class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
                         <p class="text-sm font-medium text-gray-900 dark:text-white">{{ subsidiary.name }}</p>
                         <p v-if="subsidiary.address" class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ subsidiary.address }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Subsidiary Sources -->
+                  <div v-if="getAgentEnhancedData(agent).sources" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg mt-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      @click="toggleSubsidiarySources"
+                      class="text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-0 h-auto justify-start"
+                    >
+                      <ChevronDown v-if="!showSubsidiarySources" class="w-4 h-4 mr-1" />
+                      <ChevronUp v-else class="w-4 h-4 mr-1" />
+                      📋 Discovery Sources ({{ parseSources(getAgentEnhancedData(agent).sources).length }})
+                    </Button>
+                    <div v-if="showSubsidiarySources" class="space-y-2 pl-4 border-l-2 border-blue-200 dark:border-blue-700 mt-2">
+                      <div class="space-y-1">
+                        <a v-for="(source, idx) in parseSources(getAgentEnhancedData(agent).sources)"
+                           :key="idx"
+                           :href="source"
+                           target="_blank"
+                           class="flex items-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                          <span class="font-medium mr-2">{{ idx + 1 }}.</span>
+                          <span class="truncate">{{ formatSourceUrl(source) }}</span>
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -269,6 +295,29 @@
         >
           Review Results
         </Button>
+      </div>
+    </Card>
+
+    <!-- Partner Approved -->
+    <Card
+      v-if="shouldShowApprovalMessage"
+      class="p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700"
+    >
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <CheckCircle class="w-6 h-6 text-green-600 dark:text-green-400" />
+          <div>
+            <h4 class="text-lg font-medium text-slate-900 dark:text-white">Partner Approved</h4>
+            <p class="text-green-700 dark:text-green-300">
+              {{ approvalMessage }}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <div class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm px-3 py-1.5 rounded-full font-medium border border-green-200 dark:border-green-600">
+            ✓ Approved
+          </div>
+        </div>
       </div>
     </Card>
   </div>
@@ -318,6 +367,7 @@ export default {
     const workflowStarted = ref(false)
     const showNameSources = ref(false)
     const showAddressSources = ref(false)
+    const showSubsidiarySources = ref(false)
     const originalName = ref('')
     const originalAddress = ref('')
     let timer = null
@@ -544,6 +594,29 @@ export default {
       return true
     })
 
+    // Computed property to determine if approval message should be shown
+    const shouldShowApprovalMessage = computed(() => {
+      // Only show if workflow is complete
+      if (!isWorkflowComplete.value) {
+        return false
+      }
+
+      // Show if partner is approved
+      if (props.partnerData?.status === 'approved') {
+        return true
+      }
+
+      return false
+    })
+
+    // Computed property for approval message
+    const approvalMessage = computed(() => {
+      const confidence = props.partnerData?.overallConfidence || 0
+      const companyName = props.partnerData?.companyName || props.partnerData?.partnerInfo?.companyName || 'Partner'
+
+      return `${companyName} has been successfully validated and approved with ${confidence}% confidence. All validation checks passed.`
+    })
+
     // Helper function to get confidence badge class based on agent type and score
     const getConfidenceBadgeClass = (agentName, confidence) => {
       let threshold = 70 // Default threshold
@@ -637,8 +710,10 @@ export default {
     const startWorkflow = () => {
       console.log('=== startWorkflow called ===')
       console.log('- props.partnerData:', !!props.partnerData)
+      console.log('- props.partnerData.id:', props.partnerData?.id)
       console.log('- timer:', !!timer)
       console.log('- workflowStarted:', workflowStarted.value)
+      console.log('- agents.length:', agents.value.length)
 
       if (props.partnerData && !timer && !workflowStarted.value) {
         console.log('✅ Starting workflow animation for:', props.partnerData.companyName || props.partnerData.partnerInfo?.companyName)
@@ -704,9 +779,11 @@ export default {
     watch(() => props.partnerData, (newData, oldData) => {
       console.log('=== WATCH TRIGGERED ===')
       console.log('- newData ID:', newData?.id)
+      console.log('- newData:', newData)
       console.log('- oldData ID:', oldData?.id)
       console.log('- isInitialMount:', isInitialMount.value)
       console.log('- workflowStarted:', workflowStarted.value)
+      console.log('- agents.length:', agents.value.length)
 
       if (!newData) {
         console.log('No partner data, skipping')
@@ -952,6 +1029,24 @@ export default {
       showAddressSources.value = !showAddressSources.value
     }
 
+    const toggleSubsidiarySources = () => {
+      showSubsidiarySources.value = !showSubsidiarySources.value
+    }
+
+    const parseSources = (sources) => {
+      if (!sources) return []
+      if (Array.isArray(sources)) return sources
+      if (typeof sources === 'string') {
+        try {
+          const parsed = JSON.parse(sources)
+          return Array.isArray(parsed) ? parsed : [sources]
+        } catch {
+          return [sources]
+        }
+      }
+      return []
+    }
+
     const formatSourceUrl = (url) => {
       try {
         const urlObj = new URL(url.trim())
@@ -959,11 +1054,6 @@ export default {
       } catch {
         return url.trim()
       }
-    }
-
-    const parseSources = (sourcesString) => {
-      if (!sourcesString) return []
-      return sourcesString.split(',').map(source => source.trim()).filter(source => source.length > 0)
     }
 
     const getAcceptedNameValue = () => {
@@ -1006,6 +1096,8 @@ export default {
       agents,
       shouldShowReviewRequired,
       reviewRequiredMessage,
+      shouldShowApprovalMessage,
+      approvalMessage,
       navigateToReview,
       isInitialMount,
       getConfidenceBadgeClass,
@@ -1016,10 +1108,12 @@ export default {
       isAddressAccepted,
       showNameSources,
       showAddressSources,
+      showSubsidiarySources,
       toggleNameSources,
       toggleAddressSources,
-      formatSourceUrl,
+      toggleSubsidiarySources,
       parseSources,
+      formatSourceUrl,
       originalName,
       originalAddress,
       getAcceptedNameValue,

@@ -425,7 +425,7 @@ export default {
     const { toast } = useToast()
     const validationStore = useValidationStore()
     const { isDark, toggleTheme } = useTheme()
-    const { notifications, unreadCount, markAllAsRead } = useNotifications()
+    const { notifications, unreadCount, markAllAsRead, notifyValidationComplete } = useNotifications()
     const showNotifications = ref(false)
 
     const toggleNotifications = () => {
@@ -595,6 +595,9 @@ export default {
         // Reset animation state and start timer
         animationCompleted.value = false
 
+        // Switch to validation workflow view
+        activeView.value = 'overview'
+
         // Show immediate processing started message
         toast({
           title: "AI Validation Started",
@@ -624,49 +627,25 @@ export default {
         console.log('Mapped API Response:', partnerData.apiResponse)
 
       } else {
-        // Fallback to mock data if API call failed
-        console.log('Using mock data for partner validation')
-        const aiResults = validationStore.generateAIResults(partnerData)
-        const validationResult = validationStore.addValidationResult(partnerData, aiResults)
+        // API call failed - show proper error
+        console.error('Partner registration failed - no API response data')
 
-        validationStore.setActiveValidation(validationResult)
-        activePartnerRequest.value = validationResult
-
-        // Reset animation state and start timer for mock data too
-        animationCompleted.value = false
-
-        // Set animation completion after 10 seconds (5 agents × 2 seconds each)
-        setTimeout(() => {
-          animationCompleted.value = true
-          console.log('Mock animation completed, updating dashboard card status')
-
-          // Show validation complete message AFTER animation ends (for mock data)
-          const needsReview = validationStore.determineIfHumanReviewNeeded(partnerData, aiResults)
-
-          toast({
-            title: needsReview ? "Validation Complete - Review Required (Mock)" : "Validation Complete - Auto-Approved (Mock)",
-            description: needsReview
-              ? `${partnerData.companyName} requires human review (${aiResults.overallConfidence}% confidence) - Mock Data`
-              : `${partnerData.companyName} has been automatically approved (${aiResults.overallConfidence}% confidence) - Mock Data`,
-            variant: "default"
-          })
-        }, 10000)
-
-        // Show immediate processing started message for mock data
         toast({
-          title: "Validation Started",
-          description: `AI validation initiated for ${partnerData.companyName} (using mock data)`,
+          title: "Registration Failed",
+          description: "Unable to process partner registration. Please check your connection and try again.",
           variant: "destructive"
         })
-      }
 
-      activeView.value = 'overview' // Auto-switch to see the workflow
+        // Don't create validation result or switch views on failure
+        // Keep user on registration form to retry
+        return
+      }
     }
 
     // Helper functions for validation status display
     const getValidationStatusText = (status) => {
-      // Show "Currently processing" only during initial animation, then show final status
-      if (activePartnerRequest.value && !animationCompleted.value && status === 'pending_review') {
+      // Show "Currently processing" during animation for all statuses, then show final status
+      if (activePartnerRequest.value && !animationCompleted.value) {
         return 'Currently processing'
       }
 

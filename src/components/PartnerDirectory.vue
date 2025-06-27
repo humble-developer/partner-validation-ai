@@ -129,6 +129,7 @@
                 </td>
                 <td class="py-4 px-6">
                   <div class="flex items-center space-x-2">
+                    <!-- Edit Button (only for non-rejected partners) -->
                     <Button
                       v-if="partner.status !== 'rejected'"
                       @click.stop="editPartner(partner)"
@@ -139,16 +140,8 @@
                     >
                       <Edit class="w-4 h-4" />
                     </Button>
-                    <Button
-                      v-else
-                      @click.stop="viewPartnerDetails(partner)"
-                      variant="ghost"
-                      size="sm"
-                      class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200"
-                      title="View Details"
-                    >
-                      <Eye class="w-4 h-4" />
-                    </Button>
+
+                    <!-- AI Details Button (for all partners) -->
                     <Button
                       @click.stop="viewAIDetails(partner)"
                       variant="ghost"
@@ -157,6 +150,17 @@
                       title="View AI Details"
                     >
                       <Brain class="w-4 h-4" />
+                    </Button>
+
+                    <!-- Delete Button (for all partners) -->
+                    <Button
+                      @click.stop="confirmDeletePartner(partner)"
+                      variant="ghost"
+                      size="sm"
+                      class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+                      title="Delete Partner"
+                    >
+                      <Trash2 class="w-4 h-4" />
                     </Button>
                   </div>
                 </td>
@@ -233,7 +237,53 @@
                     </div>
                   </div>
 
-                  <div v-if="agentResult.sources?.length" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg">
+                  <!-- Subsidiaries Display (for Subsidiary Discovery Agent) -->
+                  <div v-if="agentResult.name === 'Subsidiary Discovery Agent' && getSubsidiaries(selectedPartnerForAI)?.length" class="border-l-4 border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-r-lg">
+                    <div class="flex items-center justify-between mb-3">
+                      <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">🏢 Discovered Subsidiaries</h5>
+                      <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-2 py-1 rounded-full font-medium border border-blue-200 dark:border-blue-600">
+                        {{ getSubsidiaries(selectedPartnerForAI).length }} Found
+                      </span>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                      <div class="space-y-2">
+                        <div v-for="subsidiary in getSubsidiaries(selectedPartnerForAI)"
+                             :key="subsidiary.name"
+                             class="p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                          <p class="text-sm font-medium text-gray-900 dark:text-white">{{ subsidiary.name }}</p>
+                          <p v-if="subsidiary.address" class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ subsidiary.address }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Subsidiary Sources -->
+                  <div v-if="agentResult.name === 'Subsidiary Discovery Agent' && agentResult.sources?.length" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      @click="toggleSources('Subsidiary_Sources')"
+                      class="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 p-0 h-auto justify-start mb-2"
+                    >
+                      <ChevronDown v-if="!showSourcesForAgent['Subsidiary_Sources']" class="w-4 h-4 mr-1" />
+                      <ChevronUp v-else class="w-4 h-4 mr-1" />
+                      📋 Discovery Sources ({{ agentResult.sources.length }})
+                    </Button>
+                    <div v-if="showSourcesForAgent['Subsidiary_Sources']" class="space-y-2 pl-4 border-l-2 border-blue-200 dark:border-blue-700">
+                      <div class="space-y-1">
+                        <a v-for="(source, idx) in agentResult.sources"
+                           :key="idx"
+                           :href="source"
+                           target="_blank"
+                           class="flex items-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline bg-white dark:bg-slate-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition-colors duration-200">
+                          <span class="font-medium mr-2">{{ idx + 1 }}.</span>
+                          <span class="truncate">{{ formatSourceUrl(source) }}</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="agentResult.sources?.length && agentResult.name !== 'Subsidiary Discovery Agent'" class="border-l-4 border-gray-400 dark:border-gray-500 bg-gray-50/30 dark:bg-gray-900/10 p-3 rounded-r-lg">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -260,23 +310,7 @@
                 </div>
               </div>
 
-              <!-- Subsidiaries Section -->
-              <div v-if="getSubsidiaries(selectedPartnerForAI)?.length" class="bg-gray-50 dark:bg-slate-700 p-6 rounded-xl border border-gray-200 dark:border-slate-600">
-                <div class="flex items-center justify-between mb-4">
-                  <h4 class="text-lg font-semibold text-gray-900 dark:text-white">🏢 Discovered Subsidiaries</h4>
-                  <span class="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-sm px-3 py-1 rounded-full font-medium">
-                    {{ getSubsidiaries(selectedPartnerForAI).length }} Found
-                  </span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div v-for="subsidiary in getSubsidiaries(selectedPartnerForAI)"
-                       :key="subsidiary.name"
-                       class="bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500 transition-colors duration-200">
-                    <h5 class="font-medium text-gray-900 dark:text-white">{{ subsidiary.name }}</h5>
-                    <p v-if="subsidiary.address" class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ subsidiary.address }}</p>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
@@ -364,6 +398,49 @@
           </div>
         </div>
       </div>
+
+      <!-- Delete Confirmation Modal -->
+      <div v-if="showDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="cancelDelete">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full mx-4" @click.stop>
+          <div class="p-6">
+            <div class="flex items-center space-x-3 mb-4">
+              <div class="w-12 h-12 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center">
+                <Trash2 class="w-6 h-6" />
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Delete Partner</h3>
+                <p class="text-gray-600 dark:text-gray-400">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <p class="text-gray-700 dark:text-gray-300">
+                Are you sure you want to permanently delete
+                <span class="font-semibold text-gray-900 dark:text-white">{{ selectedPartnerForDelete?.companyName }}</span>?
+              </p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                This will remove all partner data, validation results, and AI recommendations.
+              </p>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3">
+              <Button
+                @click="cancelDelete"
+                variant="outline"
+                class="px-6 py-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                @click="deletePartner"
+                class="px-6 py-2 bg-red-600 text-white hover:bg-red-700 transition-colors duration-200"
+              >
+                Delete Partner
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -373,7 +450,7 @@ import { ref, computed, watch } from 'vue'
 import Card from '@/components/ui/card.vue'
 import Badge from '@/components/ui/badge.vue'
 
-import { Building, CheckCircle, X, Download, ChevronUp, ChevronDown, Eye, Brain, Edit } from 'lucide-vue-next'
+import { Building, CheckCircle, X, Download, ChevronUp, ChevronDown, Eye, Brain, Edit, Trash2 } from 'lucide-vue-next'
 import Button from '@/components/ui/button.vue'
 import { useValidationStore } from '@/stores/validation'
 import { useToast } from '@/composables/use-toast'
@@ -392,7 +469,8 @@ export default {
     ChevronDown,
     Eye,
     Brain,
-    Edit
+    Edit,
+    Trash2
   },
   setup() {
     const validationStore = useValidationStore()
@@ -401,6 +479,8 @@ export default {
     const statusFilter = ref('all')
     const selectedPartnerForAI = ref(null)
     const selectedPartnerForEdit = ref(null)
+    const selectedPartnerForDelete = ref(null)
+    const showDeleteConfirmation = ref(false)
     const showSourcesForAgent = ref({})
     const originalValues = ref({})
     const refreshTrigger = ref(0) // Force reactivity trigger
@@ -551,6 +631,48 @@ export default {
       closeEditModal()
 
       console.log('Partner updated:', editForm.value)
+    }
+
+    // Delete partner functionality
+    const confirmDeletePartner = (partner) => {
+      selectedPartnerForDelete.value = partner
+      showDeleteConfirmation.value = true
+    }
+
+    const cancelDelete = () => {
+      selectedPartnerForDelete.value = null
+      showDeleteConfirmation.value = false
+    }
+
+    const deletePartner = () => {
+      if (!selectedPartnerForDelete.value) return
+
+      const partner = selectedPartnerForDelete.value
+      const partnerId = partner.partnerId || partner.id
+
+      // Remove from validation store
+      const partnerIndex = validationStore.validationResults.findIndex(
+        p => (p.partnerId === partnerId || p.id === partnerId)
+      )
+
+      if (partnerIndex !== -1) {
+        validationStore.validationResults.splice(partnerIndex, 1)
+      }
+
+      // Clear any accepted recommendations for this partner
+      validationStore.clearAcceptedRecommendations(partnerId)
+
+      // Show success toast
+      toast({
+        title: "Partner Deleted",
+        description: `${partner.companyName} has been permanently deleted.`,
+        variant: "destructive"
+      })
+
+      // Close modal
+      cancelDelete()
+
+      console.log('Partner deleted:', partner.companyName)
     }
 
     const viewAIDetails = (partner) => {
@@ -896,7 +1018,7 @@ export default {
             reasoning: subsidiaryData.reasoning || 'Subsidiary discovery completed',
             recommended_value: subsidiaryData.subsidiaries?.length ?
               `Found ${subsidiaryData.subsidiaries.length} subsidiaries` : null,
-            sources: []
+            sources: subsidiaryData.sources ? subsidiaryData.sources.split(', ') : []
           })
         }
       }
@@ -932,6 +1054,8 @@ export default {
       statusFilter,
       selectedPartnerForAI,
       selectedPartnerForEdit,
+      selectedPartnerForDelete,
+      showDeleteConfirmation,
       editForm,
       refreshTrigger,
 
@@ -948,6 +1072,9 @@ export default {
       savePartnerChanges,
       viewAIDetails,
       closeAIModal,
+      confirmDeletePartner,
+      cancelDelete,
+      deletePartner,
       getStatusIcon,
       getStatusIconClass,
       getStatusBadgeClass,
