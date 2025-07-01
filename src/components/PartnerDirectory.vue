@@ -227,9 +227,9 @@
                         <div v-if="getAcceptMessageForAgent(agentResult.name)" class="text-xs text-gray-600 dark:text-gray-400 mt-1" :key="`accept-msg-${agentResult.name}-${refreshTrigger}`">
                           {{ getAcceptMessageForAgent(agentResult.name) }}
                         </div>
-                        <div v-else class="text-xs text-red-500 mt-1" :key="`debug-msg-${agentResult.name}-${refreshTrigger}`">
+                        <!-- <div v-else class="text-xs text-red-500 mt-1" :key="`debug-msg-${agentResult.name}-${refreshTrigger}`">
                           🔥 DEBUG: No accept message - Agent: {{ agentResult.name }}, Accepted: {{ isRecommendationAcceptedInModal(agentResult.name) }}
-                        </div>
+                        </div> -->
                       </div>
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
@@ -1134,7 +1134,49 @@ export default {
 
     const getAcceptMessageForAgent = (agentName) => {
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
-      return getAcceptMessage.value[type] || null
+
+      // First check for manual acceptance (Scenario 3)
+      const manualMessage = getAcceptMessage.value[type]
+      if (manualMessage) {
+        console.log('🔥 PartnerDirectory: Returning manual message for', agentName, ':', manualMessage)
+        return manualMessage
+      }
+
+      // Then check for auto-update scenarios (Scenario 1 & 2)
+      if (!selectedPartnerForAI.value) return null
+
+      // Get agent results to check for auto-updates
+      const agentResults = getAgentResults(selectedPartnerForAI.value)
+      const agentResult = agentResults.find(agent => agent.name === agentName)
+
+      if (agentResult && agentResult.is_updated === true && !agentResult.recommended_value) {
+        // This is an auto-update scenario (Scenario 2)
+        console.log('🔥 PartnerDirectory: Found auto-update scenario for', agentName, ':', agentResult)
+
+        let originalValue = ''
+        let aiUpdatedValue = ''
+
+        if (type === 'name') {
+          originalValue = selectedPartnerForAI.value.rawApiResponse?.partner_request?.partner_name || ''
+          aiUpdatedValue = selectedPartnerForAI.value.rawApiResponse?.validation_results?.partner_name?.name ||
+                          selectedPartnerForAI.value.rawApiResponse?.validation_results?.partner_name?.partner_name ||
+                          agentResult.partner_name || agentResult.name || ''
+        } else if (type === 'address') {
+          originalValue = selectedPartnerForAI.value.rawApiResponse?.partner_request?.partner_address || ''
+          aiUpdatedValue = selectedPartnerForAI.value.rawApiResponse?.validation_results?.partner_address?.address ||
+                          selectedPartnerForAI.value.rawApiResponse?.validation_results?.partner_address?.formatted_address ||
+                          agentResult.address || agentResult.formatted_address || ''
+        }
+
+        if (originalValue && aiUpdatedValue && originalValue !== aiUpdatedValue) {
+          const autoMessage = `AI recommended ${type} updated to "${aiUpdatedValue}" from "${originalValue}"`
+          console.log('🔥 PartnerDirectory: Returning auto-update message for', agentName, ':', autoMessage)
+          return autoMessage
+        }
+      }
+
+      console.log('🔥 PartnerDirectory: No message found for', agentName)
+      return null
     }
 
     // Watch for changes in accepted recommendations to trigger display updates
