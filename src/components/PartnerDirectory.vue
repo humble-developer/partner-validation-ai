@@ -90,7 +90,7 @@
                       <Building class="w-5 h-5" />
                     </div>
                     <div>
-                      <div class="font-semibold text-gray-900 dark:text-white">{{ partner.companyName }}</div>
+                      <div class="font-semibold text-gray-900 dark:text-white">{{ getDisplayName(partner) }}</div>
                       <div class="text-sm text-gray-500 dark:text-gray-400">{{ partner.businessType || 'Business' }}</div>
                     </div>
                   </div>
@@ -114,7 +114,7 @@
                 </td>
                 <td class="py-4 px-6">
                   <div class="text-sm text-gray-900 dark:text-white max-w-xs truncate">
-                    {{ formatAddress(partner.partnerInfo) }}
+                    {{ getDisplayAddress(partner) }}
                   </div>
                 </td>
                 <td class="py-4 px-6">
@@ -180,7 +180,7 @@
               </div>
               <div>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">AI Validation Details</h3>
-                <p class="text-gray-600 dark:text-gray-400">{{ selectedPartnerForAI.companyName }}</p>
+                <p class="text-gray-600 dark:text-gray-400">{{ getDisplayName(selectedPartnerForAI) }}</p>
               </div>
             </div>
             <Button @click="closeAIModal" variant="ghost" size="sm">
@@ -208,11 +208,11 @@
                     </p>
                   </div>
 
-                  <div v-if="agentResult.recommended_value" class="border-l-4 border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-r-lg">
+                  <div v-if="shouldShowRecommendationSectionInModal(agentResult)" class="border-l-4 border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-r-lg">
                     <div class="flex items-center justify-between mb-2">
-                      <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">💡 AI Recommendation</h5>
+                      <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">{{ getRecommendationLabelInModal(agentResult) }}</h5>
                       <Button
-                        v-if="shouldShowAcceptButton(agentResult.name) && !isRecommendationAcceptedInModal(agentResult.name)"
+                        v-if="shouldShowAcceptButtonInModal(agentResult)"
                         size="sm"
                         variant="outline"
                         @click="acceptRecommendationInModal(agentResult.name, agentResult.recommended_value)"
@@ -220,19 +220,21 @@
                       >
                         Accept
                       </Button>
-                      <div v-else-if="isRecommendationAcceptedInModal(agentResult.name)" class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
+                      <div v-else-if="isRecommendationAcceptedInModal(agentResult.name) || isAutoUpdatedInModal(agentResult)" class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
                         <div class="flex items-center space-x-1">
-                          <span>✓ Accepted</span>
+                          <span>✓ {{ isAutoUpdatedInModal(agentResult) ? 'Verified' : 'Accepted' }}</span>
                         </div>
-                        <div v-if="getAcceptedValue(agentResult.name) && (agentResult.name === 'Partner Name Validator' || agentResult.name === 'Address Validator')" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          AI Recommended {{ agentResult.name === 'Partner Name Validator' ? 'name' : 'address' }} "{{ getAcceptedValue(agentResult.name) }}" accepted
-                          <span v-if="getOriginalValue(agentResult.name)">(was "{{ getOriginalValue(agentResult.name) }}")</span>
+                        <div v-if="getAcceptMessageForAgent(agentResult.name)" class="text-xs text-gray-600 dark:text-gray-400 mt-1" :key="`accept-msg-${agentResult.name}-${refreshTrigger}`">
+                          {{ getAcceptMessageForAgent(agentResult.name) }}
+                        </div>
+                        <div v-else class="text-xs text-red-500 mt-1" :key="`debug-msg-${agentResult.name}-${refreshTrigger}`">
+                          🔥 DEBUG: No accept message - Agent: {{ agentResult.name }}, Accepted: {{ isRecommendationAcceptedInModal(agentResult.name) }}
                         </div>
                       </div>
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
                       <p class="text-sm text-blue-900 dark:text-blue-200 font-medium">
-                        {{ agentResult.recommended_value }}
+                        {{ getDisplayValueInModal(agentResult) }}
                       </p>
                     </div>
                   </div>
@@ -326,7 +328,7 @@
               </div>
               <div>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Partner</h3>
-                <p class="text-gray-600 dark:text-gray-400">{{ selectedPartnerForEdit.companyName }}</p>
+                <p class="text-gray-600 dark:text-gray-400">{{ getDisplayName(selectedPartnerForEdit) }}</p>
               </div>
             </div>
             <Button @click="closeEditModal" variant="ghost" size="sm">
@@ -416,7 +418,7 @@
             <div class="mb-6">
               <p class="text-gray-700 dark:text-gray-300">
                 Are you sure you want to permanently delete
-                <span class="font-semibold text-gray-900 dark:text-white">{{ selectedPartnerForDelete?.companyName }}</span>?
+                <span class="font-semibold text-gray-900 dark:text-white">{{ getDisplayName(selectedPartnerForDelete) }}</span>?
               </p>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
                 This will remove all partner data, validation results, and AI recommendations.
@@ -497,6 +499,9 @@ export default {
 
     // Filter partners based on status and search
     const filteredPartners = computed(() => {
+      // Include trigger to force reactivity when accepted recommendations change
+      refreshTrigger.value
+
       let partners = allPartners.value
 
       // Filter by status
@@ -538,10 +543,10 @@ export default {
       ]
 
       const csvData = allData.map(partner => [
-        partner.companyName,
+        getDisplayName(partner),
         partner.status,
         partner.overallConfidence,
-        formatAddress(partner.partnerInfo),
+        getDisplayAddress(partner),
         getSubsidiaries(partner)?.length || 0,
         new Date(partner.submittedAt).toLocaleDateString()
       ])
@@ -577,10 +582,10 @@ export default {
 
     const editPartner = (partner) => {
       selectedPartnerForEdit.value = partner
-      // Populate the edit form with current data
+      // Populate the edit form with current data (including accepted values)
       editForm.value = {
-        companyName: partner.companyName || '',
-        primaryAddress: partner.partnerInfo?.primaryAddress || '',
+        companyName: getDisplayName(partner) || '',
+        primaryAddress: getDisplayAddress(partner) || '',
         businessType: partner.businessType || ''
       }
     }
@@ -794,16 +799,19 @@ export default {
         return false
       }
 
+      if (!selectedPartnerForAI.value) return false
+
+      const partnerId = selectedPartnerForAI.value.partnerId || selectedPartnerForAI.value.id
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
-      const isAccepted = acceptanceStatus.value[type] || false
-      console.log('PartnerDirectory checking acceptance for agent:', agentName, 'type:', type, 'isAccepted:', isAccepted)
+      const isAccepted = validationStore.isRecommendationAccepted(partnerId, type)
+      console.log('🔥 PartnerDirectory isRecommendationAcceptedInModal - partnerId:', partnerId, 'type:', type, 'isAccepted:', isAccepted)
       return isAccepted
     }
 
     const acceptRecommendationInModal = (agentName, recommendedValue) => {
       if (!selectedPartnerForAI.value) return
 
-      const partnerId = selectedPartnerForAI.value.id || selectedPartnerForAI.value.partnerId
+      const partnerId = selectedPartnerForAI.value.partnerId || selectedPartnerForAI.value.id
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
 
       // Store original value before updating
@@ -815,20 +823,43 @@ export default {
       }
 
       // Update the store
-      console.log('PartnerDirectory accepting for partnerId:', partnerId, 'type:', type)
+      console.log('PartnerDirectory accepting for partnerId:', partnerId, 'type:', type, 'value:', recommendedValue)
+      console.log('PartnerDirectory calling validationStore.acceptRecommendation with:', partnerId, type, recommendedValue)
       validationStore.acceptRecommendation(partnerId, type, recommendedValue)
 
       // Update the selected partner data
       if (type === 'name') {
         selectedPartnerForAI.value.companyName = recommendedValue
-        selectedPartnerForAI.value.partnerInfo.companyName = recommendedValue
+        if (selectedPartnerForAI.value.partnerInfo) {
+          selectedPartnerForAI.value.partnerInfo.companyName = recommendedValue
+        }
       } else if (type === 'address') {
-        selectedPartnerForAI.value.partnerInfo.primaryAddress = recommendedValue
+        if (selectedPartnerForAI.value.partnerInfo) {
+          selectedPartnerForAI.value.partnerInfo.primaryAddress = recommendedValue
+        }
       }
+
+      // Also update the validation data in the store for consistency
+      const validation = validationStore.getValidationById(selectedPartnerForAI.value.id)
+      if (validation) {
+        if (type === 'name') {
+          validation.companyName = recommendedValue
+          if (validation.partnerInfo) {
+            validation.partnerInfo.companyName = recommendedValue
+          }
+        } else if (type === 'address') {
+          if (validation.partnerInfo) {
+            validation.partnerInfo.primaryAddress = recommendedValue
+          }
+        }
+      }
+
+      // Force display update trigger
+      refreshTrigger.value++
 
       // Show success toast
       toast({
-        title: type === 'name' ? "Name Updated" : "Address Updated",
+        title: type === 'name' ? "Partner Name Updated" : "Partner Address Updated",
         description: `AI Recommended ${type} "${recommendedValue}" accepted (was "${previousValue}")`,
         variant: "default"
       })
@@ -886,11 +917,231 @@ export default {
       return accepted?.value || accepted || ''
     }
 
+    // New helper functions for enhanced accept button logic
+    const shouldShowRecommendationSectionInModal = (agentResult) => {
+      // Show if there's a recommendation OR if it's verified/updated
+      return agentResult.recommended_value || agentResult.is_updated !== undefined
+    }
+
+    const shouldShowAcceptButtonInModal = (agentResult) => {
+      // Only show accept button if there's a recommendation (Scenario 3)
+      return agentResult.recommended_value && shouldShowAcceptButton(agentResult.name) && !isRecommendationAcceptedInModal(agentResult.name)
+    }
+
+    const isAutoUpdatedInModal = (agentResult) => {
+      // Scenario 1 & 2: No recommendation but is_updated flag exists
+      return !agentResult.recommended_value && agentResult.is_updated !== undefined
+    }
+
+    const getRecommendationLabelInModal = (agentResult) => {
+      if (agentResult.recommended_value) {
+        return '💡 AI Recommendation' // Scenario 3
+      } else {
+        const type = agentResult.name === 'Partner Name Validator' ? 'Name' : 'Address'
+        return `✓ Verified ${type}` // Scenario 1 & 2
+      }
+    }
+
+    const getDisplayValueInModal = (agentResult) => {
+      if (agentResult.recommended_value) {
+        return agentResult.recommended_value // Scenario 3: Show recommendation
+      } else {
+        // Scenario 1 & 2: Show current value
+        if (agentResult.name === 'Partner Name Validator') {
+          return agentResult.partner_name
+        } else if (agentResult.name === 'Address Validator') {
+          return agentResult.address || agentResult.formatted_address
+        }
+      }
+      return agentResult.recommended_value || ''
+    }
+
+    const getAcceptedMessageInModal = (agentResult) => {
+      // Check if this is a manual acceptance (Scenario 3)
+      if (agentResult.recommended_value && isRecommendationAcceptedInModal(agentResult.name)) {
+        // Manual acceptance (Scenario 3) - only for recommendations
+        const acceptedValue = getAcceptedValue(agentResult.name)
+        const originalValue = getOriginalValue(agentResult.name)
+        if (acceptedValue && originalValue) {
+          const type = agentResult.name === 'Partner Name Validator' ? 'name' : 'address'
+          return `AI Recommended ${type} "${acceptedValue}" accepted (was "${originalValue}")`
+        }
+        return 'AI Recommended value accepted'
+      }
+
+      // Check if this is an auto-update (Scenario 2)
+      if (agentResult.is_updated === true && !agentResult.recommended_value) {
+        // Auto-updated (Scenario 2) - AI updated with high confidence
+        const type = agentResult.name === 'Partner Name Validator' ? 'name' : 'address'
+        const originalValue = agentResult.name === 'Partner Name Validator' ? agentResult.original_name : agentResult.original_address
+
+        // Get AI updated value from the correct source
+        let aiUpdatedValue
+        if (agentResult.name === 'Partner Name Validator') {
+          aiUpdatedValue = agentResult.partner_name
+        } else {
+          aiUpdatedValue = agentResult.address || agentResult.formatted_address
+        }
+
+        if (originalValue && aiUpdatedValue && originalValue !== aiUpdatedValue) {
+          return `AI recommended ${type} updated to "${aiUpdatedValue}" from "${originalValue}"`
+        }
+      }
+
+      // Scenario 1: is_updated = false OR no value change, no message should be shown
+      return null
+    }
+
+    // Helper functions to get display values (considering API response conditions)
+    const getDisplayName = (partner) => {
+      if (!partner) return ''
+
+      console.log('PartnerDirectory getDisplayName - partner:', partner)
+
+      // Check if there's a name validation result from API response
+      const nameValidation = partner.rawApiResponse?.validation_results?.partner_name
+      if (nameValidation) {
+        // Scenario 3: Manual review required (has recommendation)
+        if (nameValidation.recommended_partner_name) {
+          // Check if user has accepted the recommendation
+          const partnerId = partner.partnerId || partner.id
+          const acceptedName = validationStore.getAcceptedRecommendation(partnerId, 'name')
+          if (acceptedName) {
+            console.log('PartnerDirectory getDisplayName - using accepted recommendation:', acceptedName.value)
+            return acceptedName.value || acceptedName
+          }
+          // Not accepted yet, show original
+          const originalValue = partner.rawApiResponse?.partner_request?.partner_name || partner.companyName
+          console.log('PartnerDirectory getDisplayName - using original (recommendation not accepted):', originalValue)
+          return originalValue
+        }
+
+        // Scenario 1 & 2: No recommendation (verified or auto-updated)
+        // Use the AI validated name from validation results
+        const aiValidatedName = nameValidation.partner_name || nameValidation.name || partner.companyName
+        console.log('PartnerDirectory getDisplayName - using AI validated name:', aiValidatedName)
+        return aiValidatedName
+      }
+
+      // Fallback to original
+      const fallbackValue = partner.companyName || partner.partnerInfo?.companyName || ''
+      console.log('PartnerDirectory getDisplayName - using fallback value:', fallbackValue)
+      return fallbackValue
+    }
+
+    const getDisplayAddress = (partner) => {
+      if (!partner) return ''
+
+      console.log('PartnerDirectory getDisplayAddress - partner:', partner)
+
+      // Check if there's an address validation result from API response
+      const addressValidation = partner.rawApiResponse?.validation_results?.partner_address
+      if (addressValidation) {
+        // Scenario 3: Manual review required (has recommendation)
+        if (addressValidation.recommended_address) {
+          // Check if user has accepted the recommendation
+          const partnerId = partner.partnerId || partner.id
+          const acceptedAddress = validationStore.getAcceptedRecommendation(partnerId, 'address')
+          if (acceptedAddress) {
+            console.log('PartnerDirectory getDisplayAddress - using accepted recommendation:', acceptedAddress.value)
+            return acceptedAddress.value || acceptedAddress
+          }
+          // Not accepted yet, show original
+          const originalValue = partner.rawApiResponse?.partner_request?.partner_address || partner.partnerInfo?.primaryAddress
+          console.log('PartnerDirectory getDisplayAddress - using original (recommendation not accepted):', originalValue)
+          return originalValue
+        }
+
+        // Scenario 1 & 2: No recommendation (verified or auto-updated)
+        // Use the AI validated address from validation results
+        const aiValidatedAddress = addressValidation.address || addressValidation.formatted_address || partner.partnerInfo?.primaryAddress
+        console.log('PartnerDirectory getDisplayAddress - using AI validated address:', aiValidatedAddress)
+        return aiValidatedAddress
+      }
+
+      // Fallback to original
+      const fallbackValue = partner.partnerInfo?.primaryAddress || 'Address not available'
+      console.log('PartnerDirectory getDisplayAddress - using fallback value:', fallbackValue)
+      return fallbackValue
+    }
+
     // Watch for changes in the validation store to ensure reactivity
     watch(() => validationStore.validationResults, () => {
       // Force reactivity update when store changes
       console.log('PartnerDirectory detected store changes')
     }, { deep: true })
+
+    // COMPLETELY REBUILT Accept message functions
+    const getAcceptMessage = computed(() => {
+      // Force reactivity by watching the trigger
+      validationStore.acceptedRecommendationsTrigger
+      refreshTrigger.value // Also watch local trigger
+
+      console.log('🔥 PartnerDirectory: getAcceptMessage computed called - trigger:', validationStore.acceptedRecommendationsTrigger, 'refreshTrigger:', refreshTrigger.value)
+
+      if (!selectedPartnerForAI.value) {
+        console.log('🔥 PartnerDirectory: No selectedPartnerForAI, returning empty')
+        return {}
+      }
+
+      const partnerId = selectedPartnerForAI.value.partnerId || selectedPartnerForAI.value.id
+      console.log('🔥 PartnerDirectory: getAcceptMessage computed - partnerId:', partnerId)
+      console.log('🔥 PartnerDirectory: selectedPartnerForAI.value:', selectedPartnerForAI.value)
+
+      const result = {}
+
+      // Check name acceptance
+      const nameAccepted = validationStore.isRecommendationAccepted(partnerId, 'name')
+      console.log('🔥 PartnerDirectory: nameAccepted:', nameAccepted)
+      if (nameAccepted) {
+        const acceptedValue = validationStore.getAcceptedRecommendation(partnerId, 'name')
+        const originalValue = validationStore.getOriginalValue(partnerId, 'name')
+        console.log('🔥 PartnerDirectory: name accepted - acceptedValue:', acceptedValue, 'originalValue:', originalValue)
+
+        if (acceptedValue && originalValue) {
+          const displayAccepted = acceptedValue.value || acceptedValue
+          const displayOriginal = originalValue
+          result.name = `AI Recommended name "${displayAccepted}" accepted (was "${displayOriginal}")`
+          console.log('🔥 PartnerDirectory: Created name message:', result.name)
+        } else {
+          result.name = 'AI Recommended name accepted'
+          console.log('🔥 PartnerDirectory: Created default name message:', result.name)
+        }
+      }
+
+      // Check address acceptance
+      const addressAccepted = validationStore.isRecommendationAccepted(partnerId, 'address')
+      console.log('🔥 PartnerDirectory: addressAccepted:', addressAccepted)
+      if (addressAccepted) {
+        const acceptedValue = validationStore.getAcceptedRecommendation(partnerId, 'address')
+        const originalValue = validationStore.getOriginalValue(partnerId, 'address')
+        console.log('🔥 PartnerDirectory: address accepted - acceptedValue:', acceptedValue, 'originalValue:', originalValue)
+
+        if (acceptedValue && originalValue) {
+          const displayAccepted = acceptedValue.value || acceptedValue
+          const displayOriginal = originalValue
+          result.address = `AI Recommended address "${displayAccepted}" accepted (was "${displayOriginal}")`
+          console.log('🔥 PartnerDirectory: Created address message:', result.address)
+        } else {
+          result.address = 'AI Recommended address accepted'
+          console.log('🔥 PartnerDirectory: Created default address message:', result.address)
+        }
+      }
+
+      console.log('🔥 PartnerDirectory: getAcceptMessage computed result:', result)
+      return result
+    })
+
+    const getAcceptMessageForAgent = (agentName) => {
+      const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+      return getAcceptMessage.value[type] || null
+    }
+
+    // Watch for changes in accepted recommendations to trigger display updates
+    watch(() => validationStore.acceptedRecommendationsTrigger, () => {
+      refreshTrigger.value++
+      console.log('PartnerDirectory detected accepted recommendations change, triggering display update')
+    })
 
     // Format address for display
     const formatAddress = (partnerInfo) => {
@@ -993,7 +1244,12 @@ export default {
             confidence: Math.round((nameData.confidence_score || 0) * 100),
             reasoning: nameData.reasoning || 'Name validation completed',
             recommended_value: nameData.recommended_partner_name,
-            sources: nameData.sources ? nameData.sources.split(', ') : []
+            sources: nameData.sources ? nameData.sources.split(', ') : [],
+            // Enhanced data for new accept button logic
+            recommended_partner_name: nameData.recommended_partner_name,
+            partner_name: nameData.partner_name,
+            is_updated: nameData.is_updated,
+            original_name: partner.rawApiResponse?.partner_request?.partner_name
           })
         }
 
@@ -1005,7 +1261,13 @@ export default {
             confidence: Math.round((addressData.confidence_score || 0) * 100),
             reasoning: addressData.reasoning || 'Address validation completed',
             recommended_value: addressData.recommended_address,
-            sources: addressData.sources ? addressData.sources.split(', ') : []
+            sources: addressData.sources ? addressData.sources.split(', ') : [],
+            // Enhanced data for new accept button logic
+            recommended_address: addressData.recommended_address,
+            address: addressData.address,
+            formatted_address: addressData.formatted_address,
+            is_updated: addressData.is_updated,
+            original_address: partner.rawApiResponse?.partner_request?.partner_address
           })
         }
 
@@ -1094,7 +1356,19 @@ export default {
       toggleSources,
       formatSourceUrl,
       getOriginalValue,
-      getAcceptedValue
+      getAcceptedValue,
+      getAcceptMessage,
+      getAcceptMessageForAgent,
+      // New enhanced accept button functions
+      shouldShowRecommendationSectionInModal,
+      shouldShowAcceptButtonInModal,
+      isAutoUpdatedInModal,
+      getRecommendationLabelInModal,
+      getDisplayValueInModal,
+      getAcceptedMessageInModal,
+      // Display helper functions
+      getDisplayName,
+      getDisplayAddress
     }
   }
 }

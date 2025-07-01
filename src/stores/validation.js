@@ -11,7 +11,8 @@ export const useValidationStore = defineStore('validation', () => {
   const activeValidation = ref(null)
   const validationHistory = ref([])
   const completedWorkflows = ref(new Set()) // Track which partners have completed workflows
-  const acceptedRecommendations = ref(new Map()) // Track accepted recommendations by partner ID
+  const acceptedRecommendations = ref({}) // Track accepted recommendations by partner ID - use object for better reactivity
+  const acceptedRecommendationsTrigger = ref(0) // Force reactivity trigger
 
   // Getters
   const pendingReviews = computed(() =>
@@ -209,11 +210,14 @@ export const useValidationStore = defineStore('validation', () => {
 
   // Accepted recommendations management
   const acceptRecommendation = (partnerId, type, value) => {
-    if (!acceptedRecommendations.value.has(partnerId)) {
-      acceptedRecommendations.value.set(partnerId, {})
+    console.log('🔥 STORE: acceptRecommendation called with:', { partnerId, type, value })
+
+    // Initialize partner object if it doesn't exist
+    if (!acceptedRecommendations.value[partnerId]) {
+      acceptedRecommendations.value[partnerId] = {}
     }
 
-    const partnerAccepted = acceptedRecommendations.value.get(partnerId)
+    const partnerAccepted = acceptedRecommendations.value[partnerId]
 
     // Store original value before updating (only if not already stored)
     const partner = validationResults.value.find(p => p.partnerId === partnerId || p.id === partnerId)
@@ -252,26 +256,42 @@ export const useValidationStore = defineStore('validation', () => {
     }
 
     console.log(`Accepted ${type} recommendation for partner ${partnerId}:`, value)
+    console.log('Updated acceptedRecommendations:', acceptedRecommendations.value)
+    console.log('Updated partner data:', partner)
+
+    // Force reactivity trigger
+    acceptedRecommendationsTrigger.value++
   }
 
   const isRecommendationAccepted = (partnerId, type) => {
-    const partnerAccepted = acceptedRecommendations.value.get(partnerId)
-    return partnerAccepted && partnerAccepted[type] !== undefined
+    console.log('🔥 STORE: isRecommendationAccepted called with:', { partnerId, type })
+    console.log('🔥 STORE: acceptedRecommendations.value:', acceptedRecommendations.value)
+    const partnerAccepted = acceptedRecommendations.value[partnerId]
+    const result = partnerAccepted && partnerAccepted[type] !== undefined
+    console.log('🔥 STORE: isRecommendationAccepted result:', result)
+    return result
   }
 
   const getAcceptedRecommendation = (partnerId, type) => {
-    const partnerAccepted = acceptedRecommendations.value.get(partnerId)
-    return partnerAccepted ? partnerAccepted[type] : null
+    console.log('🔥 STORE: getAcceptedRecommendation called with:', { partnerId, type })
+    const partnerAccepted = acceptedRecommendations.value[partnerId]
+    const result = partnerAccepted ? partnerAccepted[type] : null
+    console.log('🔥 STORE: getAcceptedRecommendation result:', result)
+    return result
   }
 
   const getOriginalValue = (partnerId, type) => {
-    const partnerAccepted = acceptedRecommendations.value.get(partnerId)
-    return partnerAccepted && partnerAccepted[type] ? partnerAccepted[type].originalValue : ''
+    console.log('🔥 STORE: getOriginalValue called with:', { partnerId, type })
+    const partnerAccepted = acceptedRecommendations.value[partnerId]
+    const result = partnerAccepted && partnerAccepted[type] ? partnerAccepted[type].originalValue : ''
+    console.log('🔥 STORE: getOriginalValue result:', result)
+    return result
   }
 
   const clearAcceptedRecommendations = (partnerId) => {
-    acceptedRecommendations.value.delete(partnerId)
-    console.log('Cleared accepted recommendations for partner:', partnerId)
+    delete acceptedRecommendations.value[partnerId]
+    console.log('🔥 STORE: Cleared accepted recommendations for partner:', partnerId)
+    acceptedRecommendationsTrigger.value++
   }
 
   // Generate mock AI results for demonstration
@@ -382,6 +402,7 @@ export const useValidationStore = defineStore('validation', () => {
     isRecommendationAccepted,
     getAcceptedRecommendation,
     getOriginalValue,
-    clearAcceptedRecommendations
+    clearAcceptedRecommendations,
+    acceptedRecommendationsTrigger
   }
 })

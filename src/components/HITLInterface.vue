@@ -118,7 +118,7 @@
                       <div class="space-y-2">
                         <h5 class="font-bold text-gray-900 dark:text-white text-sm">Company Name</h5>
                         <p class="text-gray-700 dark:text-gray-300 font-medium bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50 p-3 rounded-lg text-sm">
-                          {{ selectedItem.partnerInfo?.companyName || selectedItem.company }}
+                          {{ getDisplayName(selectedItem) }}
                         </p>
                       </div>
 
@@ -132,7 +132,7 @@
                       <div class="space-y-2 md:col-span-2">
                         <h5 class="font-bold text-gray-900 dark:text-white text-sm">Primary Address</h5>
                         <p class="text-gray-700 dark:text-gray-300 font-medium bg-slate-50/80 dark:bg-slate-700/80 backdrop-blur-sm border border-slate-200/50 dark:border-slate-600/50 p-3 rounded-lg text-sm">
-                          {{ selectedItem.partnerInfo?.primaryAddress || 'Not provided' }}
+                          {{ getDisplayAddress(selectedItem) }}
                         </p>
                       </div>
                     </div>
@@ -159,12 +159,12 @@
                         </p>
                       </div>
 
-                      <!-- AI Recommendations -->
-                      <div v-if="agentResult.recommended_value" class="border-l-4 border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-r-lg">
+                      <!-- AI Recommendations / Verification Status -->
+                      <div v-if="shouldShowRecommendationSectionInReview(agentResult)" class="border-l-4 border-blue-400 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-900/10 p-3 rounded-r-lg">
                         <div class="flex items-center justify-between mb-2">
-                          <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">💡 AI Recommendation</h5>
+                          <h5 class="text-sm font-semibold text-blue-900 dark:text-blue-200">{{ getRecommendationLabelInReview(agentResult) }}</h5>
                           <Button
-                            v-if="shouldShowAcceptButton(agentResult.name) && !isRecommendationAccepted(agentResult.name)"
+                            v-if="shouldShowAcceptButtonInReview(agentResult)"
                             size="sm"
                             variant="outline"
                             @click="acceptRecommendation(agentResult.name, agentResult.recommended_value)"
@@ -172,19 +172,21 @@
                           >
                             Accept
                           </Button>
-                          <div v-else-if="isRecommendationAccepted(agentResult.name)" class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
+                          <div v-else-if="isRecommendationAccepted(agentResult.name) || isAutoUpdatedInReview(agentResult)" class="text-xs text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded border border-green-200 dark:border-green-700">
                             <div class="flex items-center space-x-1">
-                              <span>✓ Accepted</span>
+                              <span>✓ {{ isAutoUpdatedInReview(agentResult) ? 'Verified' : 'Accepted' }}</span>
                             </div>
-                            <div v-if="getAcceptedValue(agentResult.name) && (agentResult.name === 'Partner Name Validator' || agentResult.name === 'Address Validator')" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              AI Recommended {{ agentResult.name === 'Partner Name Validator' ? 'name' : 'address' }} "{{ getAcceptedValue(agentResult.name) }}" accepted
-                              <span v-if="getOriginalValue(agentResult.name)">(was "{{ getOriginalValue(agentResult.name) }}")</span>
+                            <div v-if="getAcceptMessageForAgent(agentResult.name)" class="text-xs text-gray-600 dark:text-gray-400 mt-1" :key="`accept-msg-${agentResult.name}-${displayUpdateTrigger}`">
+                              {{ getAcceptMessageForAgent(agentResult.name) }}
+                            </div>
+                            <div v-else class="text-xs text-red-500 mt-1" :key="`debug-msg-${agentResult.name}-${displayUpdateTrigger}`">
+                              🔥 DEBUG: No accept message - Agent: {{ agentResult.name }}, Accepted: {{ isRecommendationAccepted(agentResult.name) }}
                             </div>
                           </div>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
                           <p class="text-sm text-blue-900 dark:text-blue-200 font-medium">
-                            {{ agentResult.recommended_value }}
+                            {{ getDisplayValueInReview(agentResult) }}
                           </p>
                         </div>
                       </div>
@@ -302,7 +304,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Card from '@/components/ui/card.vue'
 import Button from '@/components/ui/button.vue'
 import Badge from '@/components/ui/badge.vue'
@@ -340,13 +342,19 @@ export default {
     const selectedItem = ref(null)
     const feedback = ref('')
 
+    // Reactivity trigger for display updates
+    const displayUpdateTrigger = ref(0)
+
     // Use validation store data only - no fallback mock data
     const pendingReviews = computed(() => {
+      // Include trigger to force reactivity when accepted recommendations change
+      displayUpdateTrigger.value
+
       const storeReviews = validationStore.pendingReviews
 
       return storeReviews.map(validation => ({
         id: validation.id,
-        company: validation.companyName,
+        company: getDisplayName(validation),
         agent: "AI Validation System",
         finding: `Overall confidence: ${validation.overallConfidence}%`,
         confidence: validation.overallConfidence,
@@ -484,7 +492,12 @@ export default {
           confidence: Math.round((nameData.confidence_score || 0) * 100),
           reasoning: nameData.reasoning || 'Name validation completed',
           recommended_value: nameData.recommended_partner_name,
-          sources: nameData.sources ? nameData.sources.split(', ') : []
+          sources: nameData.sources ? nameData.sources.split(', ') : [],
+          // Enhanced data for new accept button logic
+          recommended_partner_name: nameData.recommended_partner_name,
+          partner_name: nameData.partner_name,
+          is_updated: nameData.is_updated,
+          original_name: validation.rawApiResponse?.partner_request?.partner_name
         })
       }
 
@@ -496,7 +509,13 @@ export default {
           confidence: Math.round((addressData.confidence_score || 0) * 100),
           reasoning: addressData.reasoning || 'Address validation completed',
           recommended_value: addressData.recommended_address,
-          sources: addressData.sources ? addressData.sources.split(', ') : []
+          sources: addressData.sources ? addressData.sources.split(', ') : [],
+          // Enhanced data for new accept button logic
+          recommended_address: addressData.recommended_address,
+          address: addressData.address,
+          formatted_address: addressData.formatted_address,
+          is_updated: addressData.is_updated,
+          original_address: validation.rawApiResponse?.partner_request?.partner_address
         })
       }
 
@@ -550,44 +569,62 @@ export default {
         return false
       }
 
-      const partnerId = selectedItem.value.validationId
+      // Use the same partner ID logic as the accept function
+      const validation = validationStore.getValidationById(selectedItem.value.validationId)
+      if (!validation) return false
+
+      const partnerId = validation.partnerId || validation.id
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
 
+      console.log('HITLInterface isRecommendationAccepted - partnerId:', partnerId, 'type:', type)
       return validationStore.isRecommendationAccepted(partnerId, type)
     }
 
     const acceptRecommendation = (agentName, recommendedValue) => {
       if (!selectedItem.value) return
 
-      const partnerId = selectedItem.value.validationId
+      // Get the validation data to find the correct partner ID
+      const validation = validationStore.getValidationById(selectedItem.value.validationId)
+      if (!validation) return
+
+      const partnerId = validation.partnerId || validation.id
       const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+
+      console.log('HITLInterface accepting recommendation for partnerId:', partnerId, 'type:', type, 'value:', recommendedValue)
 
       // Store original value before updating
       let previousValue = ''
       if (type === 'name') {
-        previousValue = selectedItem.value.partnerInfo?.companyName || selectedItem.value.company
+        previousValue = validation.rawApiResponse?.partner_request?.partner_name || validation.companyName
       } else if (type === 'address') {
-        previousValue = selectedItem.value.partnerInfo?.primaryAddress || ''
+        previousValue = validation.rawApiResponse?.partner_request?.partner_address || validation.partnerInfo?.primaryAddress
       }
 
-      // Update the store
+      // Update the store (this will trigger reactivity)
+      console.log('HITLInterface calling validationStore.acceptRecommendation with:', partnerId, type, recommendedValue)
       validationStore.acceptRecommendation(partnerId, type, recommendedValue)
 
-      // Update the selected item data
-      if (type === 'name') {
-        selectedItem.value.company = recommendedValue
-        if (selectedItem.value.partnerInfo) {
-          selectedItem.value.partnerInfo.companyName = recommendedValue
-        }
-      } else if (type === 'address') {
-        if (selectedItem.value.partnerInfo) {
-          selectedItem.value.partnerInfo.primaryAddress = recommendedValue
+      // Update the validation data in the store
+      if (validation) {
+        if (type === 'name') {
+          validation.companyName = recommendedValue
+          if (validation.partnerInfo) {
+            validation.partnerInfo.companyName = recommendedValue
+          }
+        } else if (type === 'address') {
+          if (validation.partnerInfo) {
+            validation.partnerInfo.primaryAddress = recommendedValue
+          }
         }
       }
+
+      // Force display update trigger
+      console.log('HITLInterface triggering displayUpdateTrigger')
+      displayUpdateTrigger.value++
 
       // Show success toast
       toast({
-        title: type === 'name' ? "Name Updated" : "Address Updated",
+        title: type === 'name' ? "Partner Name Updated" : "Partner Address Updated",
         description: `AI Recommended ${type} "${recommendedValue}" accepted (was "${previousValue}")`,
         variant: "default"
       })
@@ -672,6 +709,216 @@ export default {
       return []
     }
 
+    // New helper functions for enhanced accept button logic
+    const shouldShowRecommendationSectionInReview = (agentResult) => {
+      // Show if there's a recommendation OR if it's verified/updated
+      return agentResult.recommended_value || agentResult.is_updated !== undefined
+    }
+
+    const shouldShowAcceptButtonInReview = (agentResult) => {
+      // Only show accept button if there's a recommendation (Scenario 3)
+      return agentResult.recommended_value && shouldShowAcceptButton(agentResult.name) && !isRecommendationAccepted(agentResult.name)
+    }
+
+    const isAutoUpdatedInReview = (agentResult) => {
+      // Scenario 1 & 2: No recommendation but is_updated flag exists
+      return !agentResult.recommended_value && agentResult.is_updated !== undefined
+    }
+
+    const getRecommendationLabelInReview = (agentResult) => {
+      if (agentResult.recommended_value) {
+        return '💡 AI Recommendation' // Scenario 3
+      } else {
+        const type = agentResult.name === 'Partner Name Validator' ? 'Name' : 'Address'
+        return `✓ Verified ${type}` // Scenario 1 & 2
+      }
+    }
+
+    const getDisplayValueInReview = (agentResult) => {
+      if (agentResult.recommended_value) {
+        return agentResult.recommended_value // Scenario 3: Show recommendation
+      } else {
+        // Scenario 1 & 2: Show current value
+        if (agentResult.name === 'Partner Name Validator') {
+          return agentResult.partner_name
+        } else if (agentResult.name === 'Address Validator') {
+          return agentResult.address || agentResult.formatted_address
+        }
+      }
+      return agentResult.recommended_value || ''
+    }
+
+    const getAcceptMessageInReview = (agentResult) => {
+      // Check if this is a manual acceptance (Scenario 3)
+      if (agentResult.recommended_value && isRecommendationAccepted(agentResult.name)) {
+        // Manual acceptance (Scenario 3) - only for recommendations
+        const acceptedValue = getAcceptedValue(agentResult.name)
+        const originalValue = getOriginalValue(agentResult.name)
+        if (acceptedValue && originalValue) {
+          const type = agentResult.name === 'Partner Name Validator' ? 'name' : 'address'
+          return `AI Recommended ${type} "${acceptedValue}" accepted (was "${originalValue}")`
+        }
+        return 'AI Recommended value accepted'
+      }
+
+      // Check if this is an auto-update (Scenario 2)
+      if (agentResult.is_updated === true && !agentResult.recommended_value) {
+        // Auto-updated (Scenario 2) - AI updated with high confidence
+        const type = agentResult.name === 'Partner Name Validator' ? 'name' : 'address'
+        const originalValue = agentResult.name === 'Partner Name Validator' ? agentResult.original_name : agentResult.original_address
+
+        // Get AI updated value from the correct source
+        let aiUpdatedValue
+        if (agentResult.name === 'Partner Name Validator') {
+          aiUpdatedValue = agentResult.partner_name
+        } else {
+          aiUpdatedValue = agentResult.address || agentResult.formatted_address
+        }
+
+        if (originalValue && aiUpdatedValue && originalValue !== aiUpdatedValue) {
+          return `AI recommended ${type} updated to "${aiUpdatedValue}" from "${originalValue}"`
+        }
+      }
+
+      // Scenario 1: is_updated = false OR no value change, no message should be shown
+      return null
+    }
+
+    // Helper functions to get display values (considering API response conditions)
+    const getDisplayName = (item) => {
+      if (!item) return ''
+
+      console.log('HITLInterface getDisplayName - item:', item)
+
+      // Check if there's a name validation result from API response
+      const nameValidation = item.rawApiResponse?.validation_results?.partner_name
+      if (nameValidation) {
+        // Scenario 3: Manual review required (has recommendation)
+        if (nameValidation.recommended_partner_name) {
+          // Check if user has accepted the recommendation
+          const partnerId = item.partnerId || item.id
+          const acceptedName = validationStore.getAcceptedRecommendation(partnerId, 'name')
+          if (acceptedName) {
+            console.log('HITLInterface getDisplayName - using accepted recommendation:', acceptedName.value)
+            return acceptedName.value || acceptedName
+          }
+          // Not accepted yet, show original
+          const originalValue = item.rawApiResponse?.partner_request?.partner_name || item.companyName || item.company
+          console.log('HITLInterface getDisplayName - using original (recommendation not accepted):', originalValue)
+          return originalValue
+        }
+
+        // Scenario 1 & 2: No recommendation (verified or auto-updated)
+        // Use the AI validated name from validation results
+        const aiValidatedName = nameValidation.partner_name || nameValidation.name || item.companyName || item.company
+        console.log('HITLInterface getDisplayName - using AI validated name:', aiValidatedName)
+        return aiValidatedName
+      }
+
+      // Fallback to original
+      const fallbackValue = item.partnerInfo?.companyName || item.company || item.companyName || ''
+      console.log('HITLInterface getDisplayName - using fallback value:', fallbackValue)
+      return fallbackValue
+    }
+
+    const getDisplayAddress = (item) => {
+      if (!item) return ''
+
+      console.log('HITLInterface getDisplayAddress - item:', item)
+
+      // Check if there's an address validation result from API response
+      const addressValidation = item.rawApiResponse?.validation_results?.partner_address
+      if (addressValidation) {
+        // Scenario 3: Manual review required (has recommendation)
+        if (addressValidation.recommended_address) {
+          // Check if user has accepted the recommendation
+          const partnerId = item.partnerId || item.id
+          const acceptedAddress = validationStore.getAcceptedRecommendation(partnerId, 'address')
+          if (acceptedAddress) {
+            console.log('HITLInterface getDisplayAddress - using accepted recommendation:', acceptedAddress.value)
+            return acceptedAddress.value || acceptedAddress
+          }
+          // Not accepted yet, show original
+          const originalValue = item.rawApiResponse?.partner_request?.partner_address || item.partnerInfo?.primaryAddress
+          console.log('HITLInterface getDisplayAddress - using original (recommendation not accepted):', originalValue)
+          return originalValue
+        }
+
+        // Scenario 1 & 2: No recommendation (verified or auto-updated)
+        // Use the AI validated address from validation results
+        const aiValidatedAddress = addressValidation.address || addressValidation.formatted_address || item.partnerInfo?.primaryAddress
+        console.log('HITLInterface getDisplayAddress - using AI validated address:', aiValidatedAddress)
+        return aiValidatedAddress
+      }
+
+      // Fallback to original
+      const fallbackValue = item.partnerInfo?.primaryAddress || 'Not provided'
+      console.log('HITLInterface getDisplayAddress - using fallback value:', fallbackValue)
+      return fallbackValue
+    }
+
+    // COMPLETELY REBUILT Accept message functions
+    const getAcceptMessage = computed(() => {
+      // Force reactivity by watching the trigger
+      validationStore.acceptedRecommendationsTrigger
+
+      if (!selectedItem.value) return {}
+
+      const validation = validationStore.getValidationById(selectedItem.value.validationId)
+      if (!validation) return {}
+
+      const partnerId = validation.partnerId || validation.id
+      console.log('🔥 HITLInterface: getAcceptMessage computed - partnerId:', partnerId)
+
+      const result = {}
+
+      // Check name acceptance
+      const nameAccepted = validationStore.isRecommendationAccepted(partnerId, 'name')
+      if (nameAccepted) {
+        const acceptedValue = validationStore.getAcceptedRecommendation(partnerId, 'name')
+        const originalValue = validationStore.getOriginalValue(partnerId, 'name')
+        console.log('🔥 HITLInterface: name accepted - acceptedValue:', acceptedValue, 'originalValue:', originalValue)
+
+        if (acceptedValue && originalValue) {
+          const displayAccepted = acceptedValue.value || acceptedValue
+          const displayOriginal = originalValue
+          result.name = `AI Recommended name "${displayAccepted}" accepted (was "${displayOriginal}")`
+        } else {
+          result.name = 'AI Recommended name accepted'
+        }
+      }
+
+      // Check address acceptance
+      const addressAccepted = validationStore.isRecommendationAccepted(partnerId, 'address')
+      if (addressAccepted) {
+        const acceptedValue = validationStore.getAcceptedRecommendation(partnerId, 'address')
+        const originalValue = validationStore.getOriginalValue(partnerId, 'address')
+        console.log('🔥 HITLInterface: address accepted - acceptedValue:', acceptedValue, 'originalValue:', originalValue)
+
+        if (acceptedValue && originalValue) {
+          const displayAccepted = acceptedValue.value || acceptedValue
+          const displayOriginal = originalValue
+          result.address = `AI Recommended address "${displayAccepted}" accepted (was "${displayOriginal}")`
+        } else {
+          result.address = 'AI Recommended address accepted'
+        }
+      }
+
+      console.log('🔥 HITLInterface: getAcceptMessage computed result:', result)
+      return result
+    })
+
+    const getAcceptMessageForAgent = (agentName) => {
+      const type = agentName === 'Partner Name Validator' ? 'name' : 'address'
+      return getAcceptMessage.value[type] || null
+    }
+
+    // Watch for changes in accepted recommendations to trigger display updates
+    watch(() => validationStore.acceptedRecommendationsTrigger, () => {
+      displayUpdateTrigger.value++
+      console.log('HITLInterface detected accepted recommendations change, triggering display update')
+    })
+
     return {
       selectedItem,
       feedback,
@@ -691,7 +938,19 @@ export default {
       acceptRecommendation,
       getAcceptedValue,
       getOriginalValue,
-      getSubsidiaries
+      getSubsidiaries,
+      getAcceptMessage,
+      getAcceptMessageForAgent,
+      // New enhanced accept button functions
+      shouldShowRecommendationSectionInReview,
+      shouldShowAcceptButtonInReview,
+      isAutoUpdatedInReview,
+      getRecommendationLabelInReview,
+      getDisplayValueInReview,
+      getAcceptMessageInReview,
+      // Display helper functions
+      getDisplayName,
+      getDisplayAddress
     }
   }
 }

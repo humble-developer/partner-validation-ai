@@ -333,7 +333,7 @@
                 <div class="flex-1">
                   <div v-if="activePartnerRequest" class="space-y-3">
                     <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ getValidationStatusText(activePartnerRequest.status) }}:</p>
-                    <p class="font-bold text-gray-900 dark:text-white text-lg">{{ activePartnerRequest.companyName }}</p>
+                    <p class="font-bold text-gray-900 dark:text-white text-lg">{{ currentPartnerDisplayName }}</p>
                     <div :class="getValidationStatusClass(activePartnerRequest.status)">
                       <div :class="getValidationStatusDotClass(activePartnerRequest.status)"></div>
                       {{ getValidationStatusLabel(activePartnerRequest.status) }}
@@ -475,7 +475,7 @@ export default {
           console.log('Old status:', activePartnerRequest.value?.status)
           console.log('New status:', newActiveValidation.status)
 
-          activePartnerRequest.value = { ...newActiveValidation }
+          activePartnerRequest.value = newActiveValidation
         }
       } else if (!newActiveValidation) {
         // Clear local state when store clears active validation
@@ -511,7 +511,7 @@ export default {
 
         // Clear the active partner request to prevent persistence
         if (activePartnerRequest.value) {
-          console.log('Clearing active partner request:', activePartnerRequest.value.companyName)
+          console.log('Clearing active partner request:', getDisplayName(activePartnerRequest.value))
 
           // Clear workflow completion flags for all partners to ensure fresh start
           validationStore.clearWorkflowCompletion(activePartnerRequest.value.id)
@@ -529,8 +529,8 @@ export default {
       if (newView === 'overview') {
         const storeActiveValidation = validationStore.activeValidation
         if (storeActiveValidation && !activePartnerRequest.value) {
-          console.log('Restoring active validation from store:', storeActiveValidation.companyName)
-          activePartnerRequest.value = { ...storeActiveValidation }
+          console.log('Restoring active validation from store:', getDisplayName(storeActiveValidation))
+          activePartnerRequest.value = storeActiveValidation
         } else if (!storeActiveValidation) {
           console.log('No active validation in store - keeping overview clean')
           activePartnerRequest.value = null
@@ -572,7 +572,7 @@ export default {
 
     const handlePartnerSubmit = (partnerData) => {
       console.log('=== NEW PARTNER SUBMISSION ===')
-      console.log('Partner:', partnerData.companyName)
+      console.log('Partner:', getDisplayName(partnerData))
 
       // Clear any previous workflow completion state
       if (activePartnerRequest.value) {
@@ -601,7 +601,7 @@ export default {
         // Show immediate processing started message
         toast({
           title: "AI Validation Started",
-          description: `Processing ${partnerData.companyName} through AI validation workflow...`,
+          description: `Processing ${getDisplayName(partnerData)} through AI validation workflow...`,
           variant: "default"
         })
 
@@ -616,8 +616,8 @@ export default {
           toast({
             title: needsReview ? "Validation Complete - Review Required" : "Validation Complete - Auto-Approved",
             description: needsReview
-              ? `${partnerData.companyName} requires human review (${aiResults.overallConfidence}% confidence)`
-              : `${partnerData.companyName} has been automatically approved (${aiResults.overallConfidence}% confidence)`,
+              ? `${getDisplayName(partnerData)} requires human review (${aiResults.overallConfidence}% confidence)`
+              : `${getDisplayName(partnerData)} has been automatically approved (${aiResults.overallConfidence}% confidence)`,
             variant: needsReview ? "default" : "default"
           })
         }, 10000)
@@ -724,7 +724,101 @@ export default {
       activeView.value = 'review'
     }
 
+    // Helper functions to get display values (considering API response conditions)
+    const getDisplayName = (partner) => {
+      if (!partner) return ''
 
+      console.log('Dashboard getDisplayName - partner:', partner)
+
+      // Check if there's a name validation result from API response
+      const nameValidation = partner.rawApiResponse?.validation_results?.partner_name
+      if (nameValidation) {
+        // Scenario 3: Manual review required (has recommendation)
+        if (nameValidation.recommended_partner_name) {
+          // Check if user has accepted the recommendation
+          const partnerId = partner.partnerId || partner.id
+          const acceptedName = validationStore.getAcceptedRecommendation(partnerId, 'name')
+          if (acceptedName) {
+            console.log('Dashboard getDisplayName - using accepted recommendation:', acceptedName.value)
+            return acceptedName.value || acceptedName
+          }
+          // Not accepted yet, show original
+          const originalValue = partner.rawApiResponse?.partner_request?.partner_name || partner.companyName
+          console.log('Dashboard getDisplayName - using original (recommendation not accepted):', originalValue)
+          return originalValue
+        }
+
+        // Scenario 1 & 2: No recommendation (verified or auto-updated)
+        // Use the AI validated name from validation results
+        const aiValidatedName = nameValidation.partner_name || nameValidation.name || partner.companyName
+        console.log('Dashboard getDisplayName - using AI validated name:', aiValidatedName)
+        return aiValidatedName
+      }
+
+      // Fallback to original
+      const fallbackValue = partner.companyName || partner.partnerInfo?.companyName || ''
+      console.log('Dashboard getDisplayName - using fallback value:', fallbackValue)
+      return fallbackValue
+    }
+
+    const getDisplayAddress = (partner) => {
+      if (!partner) return ''
+
+      console.log('Dashboard getDisplayAddress - partner:', partner)
+
+      // Check if there's an address validation result from API response
+      const addressValidation = partner.rawApiResponse?.validation_results?.partner_address
+      if (addressValidation) {
+        // Scenario 3: Manual review required (has recommendation)
+        if (addressValidation.recommended_address) {
+          // Check if user has accepted the recommendation
+          const partnerId = partner.partnerId || partner.id
+          const acceptedAddress = validationStore.getAcceptedRecommendation(partnerId, 'address')
+          if (acceptedAddress) {
+            console.log('Dashboard getDisplayAddress - using accepted recommendation:', acceptedAddress.value)
+            return acceptedAddress.value || acceptedAddress
+          }
+          // Not accepted yet, show original
+          const originalValue = partner.rawApiResponse?.partner_request?.partner_address || partner.partnerInfo?.primaryAddress
+          console.log('Dashboard getDisplayAddress - using original (recommendation not accepted):', originalValue)
+          return originalValue
+        }
+
+        // Scenario 1 & 2: No recommendation (verified or auto-updated)
+        // Use the AI validated address from validation results
+        const aiValidatedAddress = addressValidation.address || addressValidation.formatted_address || partner.partnerInfo?.primaryAddress
+        console.log('Dashboard getDisplayAddress - using AI validated address:', aiValidatedAddress)
+        return aiValidatedAddress
+      }
+
+      // Fallback to original
+      const fallbackValue = partner.partnerInfo?.primaryAddress || 'Address not available'
+      console.log('Dashboard getDisplayAddress - using fallback value:', fallbackValue)
+      return fallbackValue
+    }
+
+    // Force reactivity for display functions
+    const displayUpdateTrigger = ref(0)
+
+    // Watch for changes in accepted recommendations
+    watch(() => validationStore.acceptedRecommendationsTrigger, () => {
+      console.log('Dashboard detected accepted recommendations change')
+      console.log('Dashboard - all accepted recommendations:', validationStore.acceptedRecommendations)
+      displayUpdateTrigger.value++
+    })
+
+    // Computed properties for current partner display values
+    const currentPartnerDisplayName = computed(() => {
+      // Include trigger to force reactivity
+      displayUpdateTrigger.value
+      return getDisplayName(activePartnerRequest.value)
+    })
+
+    const currentPartnerDisplayAddress = computed(() => {
+      // Include trigger to force reactivity
+      displayUpdateTrigger.value
+      return getDisplayAddress(activePartnerRequest.value)
+    })
 
     const handleLogout = () => {
       // Clear authentication state for both email and Google users
@@ -872,6 +966,11 @@ export default {
       getValidationStatusLabel,
       getValidationStatusClass,
       getValidationStatusDotClass,
+      // Display helper functions
+      getDisplayName,
+      getDisplayAddress,
+      currentPartnerDisplayName,
+      currentPartnerDisplayAddress,
       // Theme
       isDark,
       toggleTheme,
